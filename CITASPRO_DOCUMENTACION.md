@@ -865,6 +865,70 @@ Ver **EASYPANEL.md** para guía detallada.
 
 ---
 
+## 🚨 ÚLTIMA SESIÓN - Pasos para Retomar
+
+### Problema al Cerrar
+Docker Desktop crasheó y no permite iniciar la base de datos PostgreSQL.
+
+### Opciones para Continuar
+
+#### Opción A: Reiniciar Docker (Recomendado)
+1. Reiniciar la computadora
+2. Abrir Docker Desktop y esperar a que esté verde
+3. Ejecutar:
+```powershell
+docker start citas_db
+cd "e:\Gestión de Citas\backend"
+npm run dev
+cd "e:\Gestión de Citas\frontend"
+npm run dev
+```
+4. Ir a http://localhost:3000/
+5. Login: `marco@serrano.marketing` / `Serrano602450*`
+
+#### Opción B: Instalar PostgreSQL Nativo (Si Docker sigue fallando)
+```powershell
+winget install PostgreSQL.PostgreSQL.16
+```
+Luego actualizar `backend/.env`:
+```env
+DATABASE_URL=postgresql://postgres:TU_PASSWORD@localhost:5432/agenda
+```
+
+### Lo Último que se Hizo
+1. ✅ Agregados campos de permisos al modelo User (canModify, canDelete, canUseAI)
+2. ✅ Toggle de "Acceso al asistente de IA" en formulario de usuarios
+3. ✅ Usuario `marco@serrano.marketing` tiene `canUseAI = true` en BD
+4. ✅ Puerto del frontend cambiado a 3000 (en vite.config.ts)
+5. ⏳ Pendiente probar que el chat de IA aparezca después de login
+
+### Verificar Después de Iniciar
+1. El botón de chat flotante (💬) debe aparecer en esquina inferior derecha del dashboard
+2. Si no aparece, cerrar sesión y volver a iniciar (para refrescar el token JWT)
+
+### Comandos Rápidos de Inicio
+```powershell
+# Terminal 1 - Base de datos
+docker start citas_db
+
+# Terminal 2 - Backend
+cd "e:\Gestión de Citas\backend"
+npm run dev
+
+# Terminal 3 - Frontend
+cd "e:\Gestión de Citas\frontend"
+npm run dev
+```
+
+### URLs
+| Servicio | URL |
+|----------|-----|
+| Frontend | http://localhost:3000 |
+| Backend | http://localhost:4000/api |
+| Health Check | http://localhost:4000/api/health |
+
+---
+
 **Documento mantenido por GitHub Copilot**  
 **Proyecto: CitasPro - Gestión de Citas**  
 **Cliente: Serrano Marketing**
