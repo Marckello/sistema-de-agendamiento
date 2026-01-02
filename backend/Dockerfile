@@ -8,16 +8,18 @@ WORKDIR /app
 
 # Copy package files
 COPY backend/package*.json ./
-COPY backend/prisma ./prisma/
 
 # Install dependencies
 RUN npm ci
 
-# Copy source code
-COPY backend/ .
+# Copy prisma folder (including migrations)
+COPY backend/prisma ./prisma/
 
 # Generate Prisma client
 RUN npx prisma generate
+
+# Copy source code
+COPY backend/ .
 
 # Build TypeScript
 RUN npm run build
@@ -32,10 +34,12 @@ WORKDIR /app
 
 # Copy package files
 COPY backend/package*.json ./
-COPY backend/prisma ./prisma/
 
 # Install production dependencies only
 RUN npm ci --only=production
+
+# Copy prisma folder (including migrations) from context
+COPY backend/prisma ./prisma/
 
 # Generate Prisma client for production
 RUN npx prisma generate
