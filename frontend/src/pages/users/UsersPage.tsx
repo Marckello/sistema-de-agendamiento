@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, Transition } from '@headlessui/react';
 import { useForm } from 'react-hook-form';
@@ -262,6 +262,34 @@ function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) {
       canDelete: false,
     },
   });
+
+  // Cargar datos del usuario cuando se abre el modal de edición
+  useEffect(() => {
+    if (user && isOpen) {
+      reset({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone || '',
+        role: user.role,
+        canModify: user.canModify,
+        canDelete: user.canDelete,
+        hasAiAccess: user.hasAiAccess,
+      });
+    } else if (!user && isOpen) {
+      reset({
+        email: '',
+        firstName: '',
+        lastName: '',
+        phone: '',
+        password: '',
+        role: 'EMPLOYEE',
+        canModify: false,
+        canDelete: false,
+        hasAiAccess: false,
+      });
+    }
+  }, [user, isOpen, reset]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateUserData) => userService.create(data),
