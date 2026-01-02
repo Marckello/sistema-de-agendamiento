@@ -38,6 +38,7 @@ services:
       SMTP_HOST: mailhog
       SMTP_PORT: 1025
       SMTP_FROM: noreply@citas.local
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
       - "4000:4000"
     depends_on:

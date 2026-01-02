@@ -1,9 +1,20 @@
 import OpenAI from 'openai';
 import prisma from '../config/database.js';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization - solo se crea cuando se usa
+let openaiClient: OpenAI | null = null;
+
+function getOpenAI(): OpenAI {
+  if (!openaiClient) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY no está configurada');
+    }
+    openaiClient = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openaiClient;
+}
 
 interface ChatContext {
   userId: string;
@@ -65,7 +76,7 @@ export class AIService {
         { role: 'user', content: message },
       ];
 
-      const completion = await openai.chat.completions.create({
+      const completion = await getOpenAI().chat.completions.create({
         model: 'gpt-4o-mini',
         messages,
         temperature: 0.7,
