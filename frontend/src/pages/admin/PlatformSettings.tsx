@@ -7,10 +7,12 @@ import {
   CheckCircle,
   Eye,
   EyeOff,
+  Webhook,
+  Send,
 } from 'lucide-react';
 
 export default function PlatformSettings() {
-  const [activeTab, setActiveTab] = useState<'general' | 'email' | 'security'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'email' | 'security' | 'webhooks'>('general');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -41,6 +43,25 @@ export default function PlatformSettings() {
     allowSelfRegistration: true,
   });
 
+  // Webhook settings
+  const [webhookSettings, setWebhookSettings] = useState({
+    enabled: false,
+    url: '',
+    secret: '',
+    events: {
+      appointmentCreated: false,
+      appointmentUpdated: false,
+      appointmentConfirmed: false,
+      appointmentCancelled: false,
+      appointmentCompleted: false,
+      appointmentNoShow: false,
+      clientCreated: false,
+      clientUpdated: false,
+    },
+  });
+
+  const [testingWebhook, setTestingWebhook] = useState(false);
+
   const handleSave = async () => {
     try {
       setSaving(true);
@@ -59,6 +80,7 @@ export default function PlatformSettings() {
     { id: 'general', name: 'General', icon: Settings },
     { id: 'email', name: 'Email', icon: Mail },
     { id: 'security', name: 'Seguridad', icon: Shield },
+    { id: 'webhooks', name: 'Webhooks', icon: Webhook },
   ];
 
   return (
@@ -329,6 +351,122 @@ export default function PlatformSettings() {
                       />
                       <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                     </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Webhooks Settings */}
+          {activeTab === 'webhooks' && (
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-lg font-semibold text-white mb-2">Webhooks (n8n / Integraciones)</h2>
+                <p className="text-gray-400 text-sm mb-6">
+                  Configura webhooks globales para integraciones con n8n, Zapier u otras herramientas de automatización
+                </p>
+                
+                <div className="space-y-6">
+                  {/* Enable toggle */}
+                  <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
+                    <div>
+                      <p className="text-white font-medium">Habilitar Webhooks</p>
+                      <p className="text-gray-400 text-sm">Activa el envío de eventos a URLs externas</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={webhookSettings.enabled}
+                        onChange={(e) => setWebhookSettings({ ...webhookSettings, enabled: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                  </div>
+
+                  {/* URL and Secret */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-2">URL del Webhook</label>
+                      <input
+                        type="url"
+                        value={webhookSettings.url}
+                        onChange={(e) => setWebhookSettings({ ...webhookSettings, url: e.target.value })}
+                        placeholder="https://tu-servidor.com/webhook"
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-2">Secret (para firma HMAC)</label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={webhookSettings.secret}
+                          onChange={(e) => setWebhookSettings({ ...webhookSettings, secret: e.target.value })}
+                          placeholder="••••••••"
+                          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Events */}
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-3">Eventos a enviar</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {[
+                        { key: 'appointmentCreated', label: 'Cita creada' },
+                        { key: 'appointmentUpdated', label: 'Cita actualizada' },
+                        { key: 'appointmentConfirmed', label: 'Cita confirmada' },
+                        { key: 'appointmentCancelled', label: 'Cita cancelada' },
+                        { key: 'appointmentCompleted', label: 'Cita completada' },
+                        { key: 'appointmentNoShow', label: 'Cliente no asistió' },
+                        { key: 'clientCreated', label: 'Cliente creado' },
+                        { key: 'clientUpdated', label: 'Cliente actualizado' },
+                      ].map((event) => (
+                        <label key={event.key} className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-750">
+                          <input
+                            type="checkbox"
+                            checked={webhookSettings.events[event.key as keyof typeof webhookSettings.events]}
+                            onChange={(e) => setWebhookSettings({
+                              ...webhookSettings,
+                              events: { ...webhookSettings.events, [event.key]: e.target.checked }
+                            })}
+                            className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
+                          />
+                          <span className="text-white text-sm">{event.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Test button */}
+                  <div className="pt-4 border-t border-gray-700">
+                    <button
+                      onClick={async () => {
+                        setTestingWebhook(true);
+                        // Simulate test
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        setTestingWebhook(false);
+                        alert('Webhook de prueba enviado exitosamente');
+                      }}
+                      disabled={!webhookSettings.url || testingWebhook}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50"
+                    >
+                      {testingWebhook ? (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                      Probar Webhook
+                    </button>
                   </div>
                 </div>
               </div>

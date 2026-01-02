@@ -7,7 +7,6 @@ import {
   PaintBrushIcon,
   CalendarIcon,
   BellIcon,
-  GlobeAltIcon,
   ClockIcon,
   ChatBubbleOvalLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
@@ -15,7 +14,7 @@ import { settingsService } from '@/services/settings';
 import { TenantSettings } from '@/types';
 import WhatsAppSettings from '@/components/settings/WhatsAppSettings';
 
-type SettingsTab = 'general' | 'branding' | 'booking' | 'notifications' | 'webhook' | 'schedule' | 'whatsapp';
+type SettingsTab = 'general' | 'branding' | 'booking' | 'notifications' | 'schedule' | 'whatsapp';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -32,7 +31,6 @@ export default function SettingsPage() {
     { id: 'branding' as const, label: 'Marca', icon: PaintBrushIcon },
     { id: 'booking' as const, label: 'Reservas', icon: CalendarIcon },
     { id: 'notifications' as const, label: 'Notificaciones', icon: BellIcon },
-    { id: 'webhook' as const, label: 'Webhooks', icon: GlobeAltIcon },
     { id: 'schedule' as const, label: 'Horarios', icon: ClockIcon },
     { id: 'whatsapp' as const, label: 'WhatsApp', icon: ChatBubbleOvalLeftEllipsisIcon },
   ];
@@ -82,7 +80,6 @@ export default function SettingsPage() {
               {activeTab === 'branding' && <BrandingSettings settings={settings} />}
               {activeTab === 'booking' && <BookingSettings settings={settings} />}
               {activeTab === 'notifications' && <NotificationSettings settings={settings} />}
-              {activeTab === 'webhook' && <WebhookSettings settings={settings} />}
               {activeTab === 'schedule' && <ScheduleSettings />}
               {activeTab === 'whatsapp' && <WhatsAppSettings />}
             </>
@@ -427,136 +424,6 @@ function NotificationSettings({ settings }: { settings?: TenantSettings }) {
         </div>
 
         <div className="card-footer flex justify-end">
-          <button
-            type="submit"
-            disabled={!isDirty || mutation.isPending}
-            className="btn-primary"
-          >
-            {mutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
-        </div>
-      </form>
-    </div>
-  );
-}
-
-// Webhook Settings
-function WebhookSettings({ settings }: { settings?: TenantSettings }) {
-  const queryClient = useQueryClient();
-  const { register, handleSubmit, formState: { isDirty } } = useForm({
-    defaultValues: settings?.webhook || {
-      url: '',
-      secret: '',
-      isActive: false,
-      events: [],
-    },
-  });
-
-  const mutation = useMutation({
-    mutationFn: (data: TenantSettings['webhook']) => settingsService.updateWebhook(data),
-    onSuccess: () => {
-      toast.success('Configuración guardada');
-      queryClient.invalidateQueries({ queryKey: ['settings'] });
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Error al guardar');
-    },
-  });
-
-  const testMutation = useMutation({
-    mutationFn: () => settingsService.testWebhook(),
-    onSuccess: (data) => {
-      if (data.data.success) {
-        toast.success('Webhook probado exitosamente');
-      } else {
-        toast.error(`Error: ${data.data.error}`);
-      }
-    },
-    onError: (error: any) => {
-      toast.error(error.response?.data?.message || 'Error al probar');
-    },
-  });
-
-  const webhookEvents = [
-    { id: 'appointment.created', label: 'Cita creada' },
-    { id: 'appointment.updated', label: 'Cita actualizada' },
-    { id: 'appointment.confirmed', label: 'Cita confirmada' },
-    { id: 'appointment.cancelled', label: 'Cita cancelada' },
-    { id: 'appointment.completed', label: 'Cita completada' },
-    { id: 'appointment.no_show', label: 'Cliente no asistió' },
-    { id: 'client.created', label: 'Cliente creado' },
-    { id: 'client.updated', label: 'Cliente actualizado' },
-  ];
-
-  return (
-    <div className="card">
-      <div className="card-header">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Webhooks (n8n)
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Configura webhooks para integraciones con n8n u otras herramientas
-        </p>
-      </div>
-      <form onSubmit={handleSubmit((data) => mutation.mutate(data as TenantSettings['webhook']))}>
-        <div className="card-body space-y-4">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              {...register('isActive')}
-              className="w-5 h-5 text-primary-600 rounded"
-            />
-            <span className="font-medium text-gray-900 dark:text-white">
-              Habilitar webhooks
-            </span>
-          </label>
-
-          <div>
-            <label className="label">URL del webhook</label>
-            <input
-              {...register('url')}
-              className="input"
-              placeholder="https://n8n.ejemplo.com/webhook/abc123"
-            />
-          </div>
-
-          <div>
-            <label className="label">Secret (para firma HMAC)</label>
-            <input
-              type="password"
-              {...register('secret')}
-              className="input"
-              placeholder="Tu clave secreta"
-            />
-          </div>
-
-          <div>
-            <label className="label">Eventos a enviar</label>
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {webhookEvents.map((event) => (
-                <label key={event.id} className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    value={event.id}
-                    {...register('events')}
-                    className="w-4 h-4 text-primary-600 rounded"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">{event.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="card-footer flex justify-between">
-          <button
-            type="button"
-            onClick={() => testMutation.mutate()}
-            disabled={testMutation.isPending}
-            className="btn-secondary"
-          >
-            {testMutation.isPending ? 'Probando...' : 'Probar Webhook'}
-          </button>
           <button
             type="submit"
             disabled={!isDirty || mutation.isPending}
