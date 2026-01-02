@@ -38,6 +38,10 @@ import ProfilePage from '@/pages/profile/ProfilePage';
 // Public Booking
 import PublicBookingPage from '@/pages/booking/PublicBookingPage';
 
+// Admin Pages (Super Admin only)
+import AdminDashboardPage from '@/pages/admin/AdminDashboardPage';
+import TenantsPage from '@/pages/admin/TenantsPage';
+
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -120,6 +124,10 @@ function App() {
         <Route path="/users" element={<UsersPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        
+        {/* Admin Routes (Super Admin only) */}
+        <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/admin/tenants" element={<TenantsPage />} />
       </Route>
 
       {/* Default redirect */}
