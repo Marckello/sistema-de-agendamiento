@@ -8,9 +8,15 @@ const router = Router();
 // Todas las rutas requieren autenticación
 router.use(authenticate);
 
-// Configuración general (solo Super Admin)
+// Configuración general (solo Admin y Super Admin)
 router.get('/', settingsController.getSettings);
-router.put('/', requireRole(UserRole.SUPER_ADMIN), settingsController.updateSettings);
+router.put('/', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), settingsController.updateSettings);
+
+// Rutas específicas para actualizar secciones de configuración
+router.put('/general', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), settingsController.updateSettings);
+router.put('/branding', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), settingsController.updateSettings);
+router.put('/booking', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), settingsController.updateSettings);
+router.put('/notifications', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), settingsController.updateSettings);
 
 // Horarios (Admin y Super Admin) - ambas rutas soportadas
 router.get('/schedules', settingsController.getSchedules);
