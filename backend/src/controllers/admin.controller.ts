@@ -111,39 +111,21 @@ export async function getPlatformStats(req: Request, res: Response) {
     });
 
     res.json({
-      stats: {
-        totalTenants,
-        activeTenants,
-        inactiveTenants: totalTenants - activeTenants,
-        totalUsers,
-        totalClients,
-        totalAppointments,
-        appointmentsThisMonth,
-        revenueThisMonth: revenueThisMonth._sum.price || 0,
-        tenantsGrowth: {
-          thisMonth: tenantsThisMonth,
-          lastMonth: tenantsLastMonth,
-          percentage: growthPercentage,
-        },
+      totalTenants,
+      activeTenants,
+      inactiveTenants: totalTenants - activeTenants,
+      totalUsers,
+      totalClients,
+      totalAppointments,
+      appointmentsThisMonth,
+      monthlyRevenue: revenueThisMonth._sum.price || 0,
+      growth: {
+        tenants: tenantsLastMonth > 0 
+          ? Math.round((tenantsThisMonth - tenantsLastMonth) / tenantsLastMonth * 100)
+          : tenantsThisMonth > 0 ? 100 : 0,
+        users: 0,
+        appointments: 0,
       },
-      recentActivity: recentActivity.map(apt => ({
-        id: apt.id,
-        type: 'appointment',
-        tenantName: apt.tenant.name,
-        tenantSlug: apt.tenant.slug,
-        clientName: `${apt.client.firstName} ${apt.client.lastName}`,
-        serviceName: apt.service.name,
-        date: apt.date,
-        status: apt.status,
-        createdAt: apt.createdAt,
-      })),
-      topTenants: topTenants.map(t => ({
-        id: t.id,
-        name: t.name,
-        slug: t.slug,
-        logo: t.logo,
-        appointmentsCount: t._count.appointments,
-      })),
     });
   } catch (error) {
     console.error('Error getting platform stats:', error);
@@ -213,7 +195,7 @@ export async function listTenants(req: Request, res: Response) {
     ]);
 
     res.json({
-      data: tenants.map(t => ({
+      tenants: tenants.map(t => ({
         id: t.id,
         slug: t.slug,
         name: t.name,
@@ -221,10 +203,11 @@ export async function listTenants(req: Request, res: Response) {
         phone: t.phone,
         logo: t.logo,
         plan: t.plan,
+        planId: t.planId,
         subscriptionStatus: t.subscriptionStatus,
         isActive: t.isActive,
         createdAt: t.createdAt,
-        counts: t._count,
+        _count: t._count,
       })),
       pagination: {
         page: parseInt(page as string),
@@ -460,7 +443,7 @@ export async function getUsageMetrics(req: Request, res: Response) {
 // Obtener logs de actividad global
 export async function getActivityLogs(req: Request, res: Response) {
   try {
-    const { page = '1', limit = '50' } = req.query;
+    const { page = '1', limit = '50', action } = req.query;
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string);
     const take = parseInt(limit as string);
 
@@ -470,27 +453,145 @@ export async function getActivityLogs(req: Request, res: Response) {
       skip,
       orderBy: { createdAt: 'desc' },
       include: {
-        tenant: { select: { name: true, slug: true } },
+        tenant: { select: { id: true, name: true, slug: true } },
         client: { select: { firstName: true, lastName: true } },
-        employee: { select: { firstName: true, lastName: true } },
+        employee: { select: { id: true, firstName: true, lastName: true } },
         service: { select: { name: true } },
       },
     });
 
+    const total = await prisma.appointment.count();
+
     res.json({
-      data: recentAppointments.map(apt => ({
+      logs: recentAppointments.map(apt => ({
         id: apt.id,
-        type: 'appointment',
-        action: `Nueva cita: ${apt.service.name}`,
-        tenant: apt.tenant.name,
-        client: `${apt.client.firstName} ${apt.client.lastName}`,
-        employee: `${apt.employee.firstName} ${apt.employee.lastName}`,
-        status: apt.status,
+        action: 'APPOINTMENT_CREATED',
+        description: `Nueva cita: ${apt.service.name} para ${apt.client.firstName} ${apt.client.lastName}`,
+        tenant: { id: apt.tenant.id, name: apt.tenant.name },
+        user: apt.employee ? { id: apt.employee.id, firstName: apt.employee.firstName, lastName: apt.employee.lastName } : null,
         createdAt: apt.createdAt,
       })),
+      pagination: {
+        page: parseInt(page as string),
+        limit: take,
+        total,
+        totalPages: Math.ceil(total / take),
+      },
     });
   } catch (error) {
     console.error('Error getting activity logs:', error);
     res.status(500).json({ error: 'Error al obtener logs' });
+  }
+}
+
+// ============================================
+// PLANS CRUD
+// ============================================
+
+// Crear plan
+export async function createPlan(req: Request, res: Response) {
+  try {
+    const {
+      name,
+      price,
+      maxUsers,
+      maxClients,
+      maxAppointmentsPerMonth,
+      hasWhatsApp,
+      hasAI,
+      hasReports,
+      hasCustomBranding,
+    } = req.body;
+
+    const plan = await prisma.plan.create({
+      data: {
+        name,
+        displayName: name,
+        price: price || 0,
+        maxEmployees: maxUsers || 5,
+        maxClients: maxClients || 100,
+        maxAppointments: maxAppointmentsPerMonth || 500,
+        hasPublicBooking: true,
+        hasEmailReminders: true,
+        hasSmsReminders: hasWhatsApp || false,
+        hasWebhooks: false,
+        hasReports: hasReports || false,
+        hasCustomBranding: hasCustomBranding || false,
+      },
+    });
+
+    res.status(201).json(plan);
+  } catch (error) {
+    console.error('Error creating plan:', error);
+    res.status(500).json({ error: 'Error al crear plan' });
+  }
+}
+
+// Actualizar plan
+export async function updatePlan(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const {
+      name,
+      price,
+      maxUsers,
+      maxClients,
+      maxAppointmentsPerMonth,
+      hasWhatsApp,
+      hasAI,
+      hasReports,
+      hasCustomBranding,
+    } = req.body;
+
+    const updateData: any = {};
+    
+    if (name !== undefined) {
+      updateData.name = name;
+      updateData.displayName = name;
+    }
+    if (price !== undefined) updateData.price = price;
+    if (maxUsers !== undefined) updateData.maxEmployees = maxUsers;
+    if (maxClients !== undefined) updateData.maxClients = maxClients;
+    if (maxAppointmentsPerMonth !== undefined) updateData.maxAppointments = maxAppointmentsPerMonth;
+    if (hasWhatsApp !== undefined) updateData.hasSmsReminders = hasWhatsApp;
+    if (hasReports !== undefined) updateData.hasReports = hasReports;
+    if (hasCustomBranding !== undefined) updateData.hasCustomBranding = hasCustomBranding;
+
+    const plan = await prisma.plan.update({
+      where: { id },
+      data: updateData,
+    });
+
+    res.json(plan);
+  } catch (error) {
+    console.error('Error updating plan:', error);
+    res.status(500).json({ error: 'Error al actualizar plan' });
+  }
+}
+
+// Eliminar plan
+export async function deletePlan(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    // Verificar que no tenga empresas asociadas
+    const tenantsCount = await prisma.tenant.count({
+      where: { planId: id },
+    });
+
+    if (tenantsCount > 0) {
+      return res.status(400).json({ 
+        error: `No se puede eliminar el plan. Hay ${tenantsCount} empresa(s) asociada(s).` 
+      });
+    }
+
+    await prisma.plan.delete({
+      where: { id },
+    });
+
+    res.json({ message: 'Plan eliminado correctamente' });
+  } catch (error) {
+    console.error('Error deleting plan:', error);
+    res.status(500).json({ error: 'Error al eliminar plan' });
   }
 }

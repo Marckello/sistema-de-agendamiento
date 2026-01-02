@@ -6,6 +6,9 @@ import {
   getTenantDetail,
   updateTenant,
   listPlans,
+  createPlan,
+  updatePlan,
+  deletePlan,
   getUsageMetrics,
   getActivityLogs,
 } from '../controllers/admin.controller.js';
@@ -26,6 +29,9 @@ router.patch('/tenants/:id', updateTenant);
 
 // Plans
 router.get('/plans', listPlans);
+router.post('/plans', createPlan);
+router.patch('/plans/:id', updatePlan);
+router.delete('/plans/:id', deletePlan);
 
 // Analytics
 router.get('/metrics', getUsageMetrics);

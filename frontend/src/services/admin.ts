@@ -9,55 +9,26 @@ export interface PlatformStats {
   totalClients: number;
   totalAppointments: number;
   appointmentsThisMonth: number;
-  revenueThisMonth: number;
-  tenantsGrowth: {
-    thisMonth: number;
-    lastMonth: number;
-    percentage: string;
+  monthlyRevenue: number;
+  growth?: {
+    tenants: number;
+    users: number;
+    appointments: number;
   };
 }
 
-export interface RecentActivity {
-  id: string;
-  type: string;
-  tenantName: string;
-  tenantSlug: string;
-  clientName: string;
-  serviceName: string;
-  date: string;
-  status: string;
-  createdAt: string;
-}
-
-export interface TopTenant {
-  id: string;
-  name: string;
-  slug: string;
-  logo: string | null;
-  appointmentsCount: number;
-}
-
-export interface DashboardData {
-  stats: PlatformStats;
-  recentActivity: RecentActivity[];
-  topTenants: TopTenant[];
-}
-
-export interface TenantListItem {
+export interface Tenant {
   id: string;
   slug: string;
   name: string;
-  email: string;
-  phone: string | null;
-  logo: string | null;
-  plan: {
-    name: string;
-    displayName: string;
-  };
-  subscriptionStatus: string;
+  logo?: string;
+  plan?: { id: string; name: string; price: number };
+  planId?: string;
+  subscriptionStatus?: string;
   isActive: boolean;
   createdAt: string;
-  counts: {
+  users?: any[];
+  _count?: {
     users: number;
     clients: number;
     appointments: number;
@@ -65,101 +36,47 @@ export interface TenantListItem {
   };
 }
 
-export interface TenantDetail {
-  id: string;
-  slug: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  description: string | null;
-  logo: string | null;
-  address: string | null;
-  city: string | null;
-  state: string | null;
-  country: string | null;
-  timezone: string;
-  currency: string;
-  primaryColor: string;
-  secondaryColor: string;
-  plan: {
-    id: string;
-    name: string;
-    displayName: string;
-    price: number;
-    maxEmployees: number;
-    maxClients: number;
-    maxAppointments: number;
-  };
-  subscriptionStatus: string;
-  isActive: boolean;
-  createdAt: string;
-  users: Array<{
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    role: string;
-    isActive: boolean;
-    lastLoginAt: string | null;
-  }>;
-  _count: {
-    clients: number;
-    appointments: number;
-    services: number;
-  };
-  stats: {
-    appointmentsThisMonth: number;
-    totalRevenue: number;
-    newClientsThisMonth: number;
-  };
-}
-
 export interface Plan {
   id: string;
   name: string;
-  displayName: string;
-  description: string | null;
+  displayName?: string;
   price: number;
-  currency: string;
-  interval: string;
-  maxEmployees: number;
+  maxUsers?: number;
+  maxEmployees?: number;
   maxClients: number;
-  maxAppointments: number;
-  maxServices: number;
-  hasPublicBooking: boolean;
-  hasEmailReminders: boolean;
-  hasSmsReminders: boolean;
-  hasWebhooks: boolean;
+  maxAppointmentsPerMonth?: number;
+  maxAppointments?: number;
+  hasWhatsApp?: boolean;
+  hasSmsReminders?: boolean;
+  hasAI?: boolean;
   hasReports: boolean;
   hasCustomBranding: boolean;
-  isActive: boolean;
-  _count: {
+  isActive?: boolean;
+  _count?: {
     tenants: number;
   };
 }
 
-export interface UsageMetrics {
-  appointmentsTrend: Array<{ date: string; count: number }>;
-  tenantsTrend: Array<{ date: string; count: number }>;
-  clientsTrend: Array<{ date: string; count: number }>;
-  planDistribution: Array<{ plan: string; count: number }>;
-  conversionRate: number;
+export interface ActivityLog {
+  id: string;
+  action: string;
+  description: string;
+  createdAt: string;
+  tenant?: { id: string; name: string };
+  user?: { id: string; firstName: string; lastName: string };
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 // API Service
-const adminService = {
-  // Dashboard
-  async getStats(): Promise<DashboardData> {
+export const adminService = {
+  // Platform Stats
+  async getPlatformStats(): Promise<PlatformStats> {
     const response = await api.get('/admin/stats');
     return response.data;
   },
@@ -169,16 +86,15 @@ const adminService = {
     page?: number;
     limit?: number;
     search?: string;
-    status?: 'active' | 'inactive' | '';
+    status?: string;
     planId?: string;
     sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-  }): Promise<PaginatedResponse<TenantListItem>> {
+  }): Promise<{ tenants: Tenant[]; pagination: Pagination }> {
     const response = await api.get('/admin/tenants', { params });
     return response.data;
   },
 
-  async getTenant(id: string): Promise<TenantDetail> {
+  async getTenantDetail(id: string): Promise<Tenant> {
     const response = await api.get(`/admin/tenants/${id}`);
     return response.data;
   },
@@ -187,28 +103,48 @@ const adminService = {
     isActive?: boolean;
     planId?: string;
     subscriptionStatus?: string;
-  }): Promise<TenantListItem> {
+  }): Promise<Tenant> {
     const response = await api.patch(`/admin/tenants/${id}`, data);
     return response.data;
   },
 
+  async deleteTenant(id: string): Promise<void> {
+    await api.delete(`/admin/tenants/${id}`);
+  },
+
   // Plans
-  async listPlans(): Promise<Plan[]> {
+  async getPlans(): Promise<Plan[]> {
     const response = await api.get('/admin/plans');
     return response.data;
   },
 
-  // Analytics
-  async getMetrics(period: number = 30): Promise<UsageMetrics> {
-    const response = await api.get('/admin/metrics', { params: { period } });
+  async createPlan(data: Partial<Plan>): Promise<Plan> {
+    const response = await api.post('/admin/plans', data);
     return response.data;
   },
 
+  async updatePlan(id: string, data: Partial<Plan>): Promise<Plan> {
+    const response = await api.patch(`/admin/plans/${id}`, data);
+    return response.data;
+  },
+
+  async deletePlan(id: string): Promise<void> {
+    await api.delete(`/admin/plans/${id}`);
+  },
+
+  // Activity Logs
   async getActivityLogs(params?: {
     page?: number;
     limit?: number;
-  }): Promise<{ data: RecentActivity[] }> {
+    action?: string;
+  }): Promise<{ logs: ActivityLog[]; pagination: Pagination }> {
     const response = await api.get('/admin/activity', { params });
+    return response.data;
+  },
+
+  // Metrics
+  async getUsageMetrics(period?: number): Promise<any> {
+    const response = await api.get('/admin/metrics', { params: { period } });
     return response.data;
   },
 };

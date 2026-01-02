@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   HomeIcon,
@@ -10,8 +10,7 @@ import {
   BuildingStorefrontIcon,
   UserGroupIcon,
   SparklesIcon,
-  BuildingOffice2Icon,
-  ChartBarIcon,
+  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -27,11 +26,6 @@ const navigation = [
   { name: 'Servicios', href: '/services', icon: BuildingStorefrontIcon },
   { name: 'Usuarios', href: '/users', icon: UserGroupIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
   { name: 'Configuración', href: '/settings', icon: Cog6ToothIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
-];
-
-const adminNavigation = [
-  { name: 'Panel Admin', href: '/admin', icon: ChartBarIcon },
-  { name: 'Empresas', href: '/admin/tenants', icon: BuildingOffice2Icon },
 ];
 
 export default function Sidebar({ open, onClose }: SidebarProps) {
@@ -130,37 +124,20 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
               );
             })}
             
-            {/* Admin Section - Solo para SUPER_ADMIN */}
+            {/* Admin Panel Link - Solo para SUPER_ADMIN */}
             {user?.role === 'SUPER_ADMIN' && (
-              <>
-                <div className="pt-6">
-                  <p className="px-4 mb-3 text-[10px] font-semibold text-purple-400 uppercase tracking-wider">
-                    Administración
-                  </p>
-                </div>
-                {adminNavigation.map((item) => {
-                  const isActive = location.pathname === item.href || 
-                    (item.href !== '/admin' && location.pathname.startsWith(item.href));
-                  
-                  return (
-                    <NavLink
-                      key={item.name}
-                      to={item.href}
-                      className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${
-                        isActive
-                          ? 'bg-purple-500/10 text-purple-400'
-                          : 'text-gray-400 hover:text-white hover:bg-dark-800'
-                      }`}
-                    >
-                      <item.icon className={`w-5 h-5 transition-colors ${isActive ? 'text-purple-400' : 'text-gray-500 group-hover:text-gray-300'}`} />
-                      {item.name}
-                      {isActive && (
-                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-purple-400" />
-                      )}
-                    </NavLink>
-                  );
-                })}
-              </>
+              <div className="pt-6">
+                <Link
+                  to="/admin"
+                  className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all duration-200 group border border-purple-500/20"
+                >
+                  <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                  Ir al Panel Admin
+                  <div className="ml-auto">
+                    <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                  </div>
+                </Link>
+              </div>
             )}
           </nav>
 
