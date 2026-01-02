@@ -91,11 +91,36 @@ export default function SettingsPage() {
 }
 
 // General Settings
-function GeneralSettings({ settings }: { settings?: TenantSettings }) {
+function GeneralSettings({ settings }: { settings?: any }) {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, formState: { isDirty } } = useForm({
-    defaultValues: settings?.general || {},
+  const { register, handleSubmit, reset, formState: { isDirty } } = useForm({
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      country: '',
+      timezone: 'America/New_York',
+      currency: 'USD',
+    },
   });
+
+  // Cargar datos cuando settings cambie
+  useEffect(() => {
+    if (settings) {
+      reset({
+        name: settings.name || '',
+        email: settings.email || '',
+        phone: settings.phone || '',
+        address: settings.address || '',
+        city: settings.city || '',
+        country: settings.country || '',
+        timezone: settings.timezone || 'America/New_York',
+        currency: settings.currency || 'USD',
+      });
+    }
+  }, [settings, reset]);
 
   const mutation = useMutation({
     mutationFn: (data: TenantSettings['general']) => settingsService.updateGeneral(data),
@@ -192,11 +217,26 @@ function GeneralSettings({ settings }: { settings?: TenantSettings }) {
 }
 
 // Branding Settings
-function BrandingSettings({ settings }: { settings?: TenantSettings }) {
+function BrandingSettings({ settings }: { settings?: any }) {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, formState: { isDirty } } = useForm({
-    defaultValues: settings?.branding || {},
+  const { register, handleSubmit, reset, formState: { isDirty } } = useForm({
+    defaultValues: {
+      logo: '',
+      primaryColor: '#3B82F6',
+      secondaryColor: '#10B981',
+    },
   });
+
+  // Cargar datos cuando settings cambie
+  useEffect(() => {
+    if (settings) {
+      reset({
+        logo: settings.logo || '',
+        primaryColor: settings.primaryColor || '#3B82F6',
+        secondaryColor: settings.secondaryColor || '#10B981',
+      });
+    }
+  }, [settings, reset]);
 
   const mutation = useMutation({
     mutationFn: (data: TenantSettings['branding']) => settingsService.updateBranding(data),
@@ -256,16 +296,28 @@ function BrandingSettings({ settings }: { settings?: TenantSettings }) {
 }
 
 // Booking Settings
-function BookingSettings({ settings }: { settings?: TenantSettings }) {
+function BookingSettings({ settings }: { settings?: any }) {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, formState: { isDirty } } = useForm({
-    defaultValues: settings?.booking || {
+  const { register, handleSubmit, reset, formState: { isDirty } } = useForm({
+    defaultValues: {
       allowOnlineBooking: true,
       requireConfirmation: false,
       maxAdvanceBooking: 30,
       minAdvanceBooking: 1,
     },
   });
+
+  // Cargar datos cuando settings cambie
+  useEffect(() => {
+    if (settings) {
+      reset({
+        allowOnlineBooking: settings.allowOnlineBooking ?? true,
+        requireConfirmation: settings.requireConfirmation ?? false,
+        maxAdvanceBooking: settings.maxAdvanceBooking ?? 30,
+        minAdvanceBooking: settings.minAdvanceBooking ?? 1,
+      });
+    }
+  }, [settings, reset]);
 
   const mutation = useMutation({
     mutationFn: (data: TenantSettings['booking']) => settingsService.updateBooking(data),
@@ -353,15 +405,26 @@ function BookingSettings({ settings }: { settings?: TenantSettings }) {
 }
 
 // Notification Settings
-function NotificationSettings({ settings }: { settings?: TenantSettings }) {
+function NotificationSettings({ settings }: { settings?: any }) {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, formState: { isDirty } } = useForm({
-    defaultValues: settings?.notifications || {
+  const { register, handleSubmit, reset, formState: { isDirty } } = useForm({
+    defaultValues: {
       emailEnabled: true,
       smsEnabled: false,
       reminderHours: 24,
     },
   });
+
+  // Cargar datos cuando settings cambie
+  useEffect(() => {
+    if (settings) {
+      reset({
+        emailEnabled: settings.emailEnabled ?? true,
+        smsEnabled: settings.smsEnabled ?? false,
+        reminderHours: settings.reminderHours ?? 24,
+      });
+    }
+  }, [settings, reset]);
 
   const mutation = useMutation({
     mutationFn: (data: TenantSettings['notifications']) => settingsService.updateNotifications(data),
