@@ -403,23 +403,23 @@ export const getCalendarAppointments = asyncHandler(async (req: Request, res: Re
   );
   
   // Formatear para calendario
-  const events = appointments.map(apt => ({
+  const events = appointments.map((apt: any) => ({
     id: apt.id,
-    title: `${apt.client.firstName} ${apt.client.lastName} - ${apt.service.name}`,
+    title: `${apt.client?.firstName || ''} ${apt.client?.lastName || ''} - ${apt.service?.name || ''}`,
     start: `${apt.date.toISOString().split('T')[0]}T${apt.startTime}:00`,
     end: `${apt.date.toISOString().split('T')[0]}T${apt.endTime}:00`,
-    backgroundColor: apt.employee.color || apt.service.color,
-    borderColor: apt.employee.color || apt.service.color,
+    backgroundColor: apt.employee?.color || apt.service?.color,
+    borderColor: apt.employee?.color || apt.service?.color,
     extendedProps: {
       status: apt.status,
-      clientId: apt.client.id,
-      clientName: `${apt.client.firstName} ${apt.client.lastName}`,
-      clientPhone: apt.client.phone,
-      employeeId: apt.employee.id,
-      employeeName: `${apt.employee.title || ''} ${apt.employee.firstName} ${apt.employee.lastName}`.trim(),
-      serviceId: apt.service.id,
-      serviceName: apt.service.name,
-      duration: apt.service.duration,
+      clientId: apt.client?.id,
+      clientName: `${apt.client?.firstName || ''} ${apt.client?.lastName || ''}`,
+      clientPhone: apt.client?.phone,
+      employeeId: apt.employee?.id,
+      employeeName: `${apt.employee?.title || ''} ${apt.employee?.firstName || ''} ${apt.employee?.lastName || ''}`.trim(),
+      serviceId: apt.service?.id,
+      serviceName: apt.service?.name,
+      duration: apt.service?.duration,
     },
   }));
   

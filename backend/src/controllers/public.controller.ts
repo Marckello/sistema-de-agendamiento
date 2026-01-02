@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../config/database';
-import { AppError } from '../middleware/errorHandler';
+import prisma from '../config/database.js';
+import { AppError } from '../middleware/errorHandler.js';
 import {
   startOfDay,
   endOfDay,
@@ -11,7 +11,7 @@ import {
   isAfter,
 } from 'date-fns';
 
-// Get tenant info by subdomain
+// Get tenant info by slug (subdomain)
 export const getTenantBySubdomain = async (
   req: Request,
   res: Response,
@@ -22,19 +22,8 @@ export const getTenantBySubdomain = async (
 
     const tenant = await prisma.tenant.findFirst({
       where: {
-        subdomain,
+        slug: subdomain,
         isActive: true,
-        settings: {
-          path: ['allowOnlineBooking'],
-          equals: true,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        subdomain: true,
-        logo: true,
-        settings: true,
       },
     });
 
@@ -42,17 +31,15 @@ export const getTenantBySubdomain = async (
       throw new AppError('Business not found or not accepting online bookings', 404);
     }
 
-    const settings = tenant.settings as any;
-
     res.json({
       success: true,
       data: {
         name: tenant.name,
-        subdomain: tenant.subdomain,
+        subdomain: tenant.slug,
         logo: tenant.logo,
-        primaryColor: settings?.primaryColor || '#3B82F6',
-        address: settings?.address || '',
-        phone: settings?.phone || '',
+        primaryColor: tenant.primaryColor || '#3B82F6',
+        address: tenant.address || '',
+        phone: tenant.phone || '',
       },
     });
   } catch (error) {
@@ -67,14 +54,14 @@ export const getPublicServices = async (
   next: NextFunction
 ) => {
   try {
-    const subdomain = req.headers['x-tenant-subdomain'] as string;
+    const slug = req.headers['x-tenant-subdomain'] as string || req.headers['x-tenant-slug'] as string;
 
-    if (!subdomain) {
+    if (!slug) {
       throw new AppError('Subdomain required', 400);
     }
 
     const tenant = await prisma.tenant.findFirst({
-      where: { subdomain, isActive: true },
+      where: { slug, isActive: true },
     });
 
     if (!tenant) {
@@ -96,7 +83,6 @@ export const getPublicServices = async (
         },
       },
       orderBy: [
-        { category: { name: 'asc' } },
         { name: 'asc' },
       ],
     });
@@ -117,33 +103,26 @@ export const getPublicEmployees = async (
   next: NextFunction
 ) => {
   try {
-    const subdomain = req.headers['x-tenant-subdomain'] as string;
-    const { serviceId } = req.query;
+    const slug = req.headers['x-tenant-subdomain'] as string || req.headers['x-tenant-slug'] as string;
 
-    if (!subdomain) {
+    if (!slug) {
       throw new AppError('Subdomain required', 400);
     }
 
     const tenant = await prisma.tenant.findFirst({
-      where: { subdomain, isActive: true },
+      where: { slug, isActive: true },
     });
 
     if (!tenant) {
       throw new AppError('Business not found', 404);
     }
 
-    // Get employees that can perform this service
-    let whereClause: any = {
-      tenantId: tenant.id,
-      isActive: true,
-      role: 'EMPLOYEE',
-    };
-
-    // In a real implementation, you'd have a user-service relationship
-    // For now, we return all employees
-
     const employees = await prisma.user.findMany({
-      where: whereClause,
+      where: {
+        tenantId: tenant.id,
+        isActive: true,
+        role: 'EMPLOYEE',
+      },
       select: {
         id: true,
         firstName: true,
@@ -169,15 +148,15 @@ export const getAvailability = async (
   next: NextFunction
 ) => {
   try {
-    const subdomain = req.headers['x-tenant-subdomain'] as string;
+    const slug = req.headers['x-tenant-subdomain'] as string || req.headers['x-tenant-slug'] as string;
     const { employeeId, date, duration } = req.query;
 
-    if (!subdomain || !employeeId || !date) {
+    if (!slug || !employeeId || !date) {
       throw new AppError('Missing required parameters', 400);
     }
 
     const tenant = await prisma.tenant.findFirst({
-      where: { subdomain, isActive: true },
+      where: { slug, isActive: true },
     });
 
     if (!tenant) {
@@ -194,7 +173,6 @@ export const getAvailability = async (
         tenantId: tenant.id,
         userId: employeeId as string,
         dayOfWeek,
-        isActive: true,
       },
     });
 
@@ -209,7 +187,9 @@ export const getAvailability = async (
         employeeId: employeeId as string,
         startTime: {
           gte: startOfDay(selectedDate),
-          lt: endOfDay(selectedDate),
+        },
+        endTime: {
+          lte: endOfDay(selectedDate),
         },
         status: {
           in: ['PENDING', 'CONFIRMED'],
@@ -276,15 +256,15 @@ export const createPublicAppointment = async (
   next: NextFunction
 ) => {
   try {
-    const subdomain = req.headers['x-tenant-subdomain'] as string;
+    const slug = req.headers['x-tenant-subdomain'] as string || req.headers['x-tenant-slug'] as string;
     const { serviceId, employeeId, date, time, client } = req.body;
 
-    if (!subdomain) {
+    if (!slug) {
       throw new AppError('Subdomain required', 400);
     }
 
     const tenant = await prisma.tenant.findFirst({
-      where: { subdomain, isActive: true },
+      where: { slug, isActive: true },
     });
 
     if (!tenant) {
@@ -342,11 +322,7 @@ export const createPublicAppointment = async (
     const [hours, minutes] = time.split(':').map(Number);
     const startTime = parseISO(date);
     startTime.setHours(hours, minutes, 0, 0);
-    const endTime = addMinutes(startTime, service.duration);
-
-    // Check settings for auto-confirm
-    const settings = tenant.settings as any;
-    const requireConfirmation = settings?.requireConfirmation ?? false;
+    const endTimeCalc = addMinutes(startTime, service.duration);
 
     // Create appointment
     const appointment = await prisma.appointment.create({
@@ -356,9 +332,9 @@ export const createPublicAppointment = async (
         employeeId: employee.id,
         serviceId: service.id,
         startTime,
-        endTime,
+        endTime: endTimeCalc,
         price: service.price,
-        status: requireConfirmation ? 'PENDING' : 'CONFIRMED',
+        status: 'PENDING',
         notes: client.notes || null,
         source: 'ONLINE',
       },
@@ -372,9 +348,6 @@ export const createPublicAppointment = async (
         },
       },
     });
-
-    // TODO: Send confirmation email
-    // TODO: Trigger webhook
 
     res.status(201).json({
       success: true,

@@ -484,7 +484,6 @@ export async function getAppointmentsByDateRange(
           lastName: true,
           email: true,
           phone: true,
-          avatar: true,
         },
       },
       employee: {
@@ -509,7 +508,7 @@ export async function getAppointmentsByDateRange(
       { date: 'asc' },
       { startTime: 'asc' },
     ],
-  });
+  }) as any;
 }
 
 // Obtener estadísticas de citas
