@@ -95,12 +95,16 @@ export default function AppointmentModal({
   });
 
   useEffect(() => {
-    if (slotsData?.data) {
-      setAvailableSlots(slotsData.data);
-      // Reset warning states when slots change
-      setSelectedSlotWarning(null);
-      setWarningAccepted(false);
+    // Los slots vienen en data.slots, no directamente en data
+    const slots = slotsData?.data?.slots || slotsData?.data || [];
+    if (Array.isArray(slots)) {
+      setAvailableSlots(slots);
+    } else {
+      setAvailableSlots([]);
     }
+    // Reset warning states when slots change
+    setSelectedSlotWarning(null);
+    setWarningAccepted(false);
   }, [slotsData]);
 
   // Create appointment mutation
