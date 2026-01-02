@@ -529,6 +529,24 @@ gender: z.string().optional().transform(val => val?.toLowerCase()),
 - Si el usuario acepta, la cita se crea de todas formas
 - Leyenda de colores (Disponible / Con advertencia)
 
+### 9. Backend de horarios no guardaba horarios del negocio
+**Problema**: El frontend llamaba a `/settings/work-schedule` pero el backend solo tenía `/settings/schedules`. Además, el backend usaba `userId || ''` en vez de `null`.
+
+**Solución** (en `settings.controller.ts` y `settings.routes.ts`):
+- Agregadas rutas `/settings/work-schedule` para GET y PUT
+- Nuevas funciones `getBusinessSchedule` y `updateBusinessSchedule`
+- Buscan/guardan WorkSchedule con `userId: null` para horarios del negocio
+- Frontend usa useEffect para cargar horarios cuando llegan del servidor
+
+### 10. Error al actualizar servicios: "Ya existe un registro"
+**Problema**: Error `P2002` de Prisma por unique constraint `@@unique([tenantId, name])`.
+
+**Causa**: Este error aparece cuando intentas crear un servicio con un nombre que ya existe, o si hay datos duplicados en la base de datos.
+
+**Solución**: El constraint es correcto (evita servicios duplicados). Si el error persiste al editar:
+1. Verificar que no haya servicios duplicados en la BD
+2. Si necesitas cambiar el nombre, asegurar que el nuevo nombre no exista
+
 ---
 
 ## 📊 Estado Actual del Desarrollo

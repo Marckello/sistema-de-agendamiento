@@ -272,8 +272,10 @@ export interface WorkSchedule {
   dayOfWeek: number;
   startTime: string;
   endTime: string;
-  isActive: boolean;
-  userId?: string;
+  isWorking: boolean; // El backend usa isWorking, no isActive
+  breakStart?: string;
+  breakEnd?: string;
+  userId?: string | null;
   tenantId: string;
 }
 

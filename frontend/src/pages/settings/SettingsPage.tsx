@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -587,16 +587,30 @@ function ScheduleSettings() {
   const schedule = scheduleData?.data || [];
 
   const [localSchedule, setLocalSchedule] = useState(
-    DAYS.map((day) => {
-      const existing = schedule.find((s: any) => s.dayOfWeek === day.id);
-      return {
-        dayOfWeek: day.id,
-        isActive: existing?.isActive ?? (day.id >= 1 && day.id <= 5),
-        startTime: existing?.startTime || '09:00',
-        endTime: existing?.endTime || '18:00',
-      };
-    })
+    DAYS.map((day) => ({
+      dayOfWeek: day.id,
+      isActive: day.id >= 1 && day.id <= 5, // Lunes a Viernes por default
+      startTime: '09:00',
+      endTime: '18:00',
+    }))
   );
+
+  // Actualizar localSchedule cuando lleguen los datos del servidor
+  useEffect(() => {
+    if (schedule.length > 0) {
+      setLocalSchedule(
+        DAYS.map((day) => {
+          const existing = schedule.find((s: any) => s.dayOfWeek === day.id);
+          return {
+            dayOfWeek: day.id,
+            isActive: existing?.isWorking ?? (day.id >= 1 && day.id <= 5),
+            startTime: existing?.startTime || '09:00',
+            endTime: existing?.endTime || '18:00',
+          };
+        })
+      );
+    }
+  }, [schedule]);
 
   const mutation = useMutation({
     mutationFn: (data: any[]) => settingsService.updateWorkSchedule(data),

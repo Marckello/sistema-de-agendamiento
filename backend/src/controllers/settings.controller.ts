@@ -73,7 +73,84 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
 
 // ==================== HORARIOS DE TRABAJO ====================
 
-// Obtener horarios
+// Obtener horarios del NEGOCIO (userId = null)
+export const getBusinessSchedule = asyncHandler(async (req: Request, res: Response) => {
+  const schedules = await prisma.workSchedule.findMany({
+    where: {
+      tenantId: req.tenant!.id,
+      userId: null, // Solo horarios del negocio
+    },
+    orderBy: { dayOfWeek: 'asc' },
+  });
+  
+  res.json({
+    success: true,
+    data: schedules,
+  });
+});
+
+// Actualizar horarios del NEGOCIO (userId = null)
+export const updateBusinessSchedule = asyncHandler(async (req: Request, res: Response) => {
+  const { schedule } = req.body;
+  
+  if (!Array.isArray(schedule)) {
+    return res.status(400).json({
+      success: false,
+      message: 'schedule debe ser un array',
+    });
+  }
+  
+  const results = [];
+  
+  for (const item of schedule) {
+    const { dayOfWeek, isActive, startTime, endTime, breakStart, breakEnd } = item;
+    
+    // Para horarios del negocio, usamos un ID especial basado en tenant+day
+    const existingSchedule = await prisma.workSchedule.findFirst({
+      where: {
+        tenantId: req.tenant!.id,
+        userId: null,
+        dayOfWeek,
+      },
+    });
+    
+    if (existingSchedule) {
+      const result = await prisma.workSchedule.update({
+        where: { id: existingSchedule.id },
+        data: {
+          isWorking: isActive ?? true,
+          startTime: startTime || '09:00',
+          endTime: endTime || '18:00',
+          breakStart,
+          breakEnd,
+        },
+      });
+      results.push(result);
+    } else {
+      const result = await prisma.workSchedule.create({
+        data: {
+          tenantId: req.tenant!.id,
+          userId: null, // Horario del negocio
+          dayOfWeek,
+          isWorking: isActive ?? true,
+          startTime: startTime || '09:00',
+          endTime: endTime || '18:00',
+          breakStart,
+          breakEnd,
+        },
+      });
+      results.push(result);
+    }
+  }
+  
+  res.json({
+    success: true,
+    message: 'Horarios del negocio actualizados',
+    data: results,
+  });
+});
+
+// Obtener horarios (todos o de un usuario específico)
 export const getSchedules = asyncHandler(async (req: Request, res: Response) => {
   const { userId } = req.query;
   

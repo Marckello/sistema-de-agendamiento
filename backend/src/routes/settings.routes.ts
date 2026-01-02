@@ -12,9 +12,11 @@ router.use(authenticate);
 router.get('/', settingsController.getSettings);
 router.put('/', requireRole(UserRole.SUPER_ADMIN), settingsController.updateSettings);
 
-// Horarios (Admin y Super Admin)
+// Horarios (Admin y Super Admin) - ambas rutas soportadas
 router.get('/schedules', settingsController.getSchedules);
+router.get('/work-schedule', settingsController.getBusinessSchedule); // Horario del negocio
 router.put('/schedules', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), settingsController.updateSchedule);
+router.put('/work-schedule', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), settingsController.updateBusinessSchedule);
 router.put('/schedules/batch', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), settingsController.updateSchedulesBatch);
 
 // Días festivos
