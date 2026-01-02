@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, Transition } from '@headlessui/react';
@@ -300,20 +300,40 @@ function ClientModal({ isOpen, onClose, client, onSuccess }: ClientModalProps) {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<CreateClientData>({
-    defaultValues: client ? {
-      firstName: client.firstName,
-      lastName: client.lastName,
-      email: client.email || '',
-      phone: client.phone || '',
-      birthDate: client.birthDate?.split('T')[0] || '',
-      gender: client.gender,
-      address: client.address || '',
-      city: client.city || '',
-      notes: client.notes || '',
-      source: client.source || '',
-    } : {},
-  });
+  } = useForm<CreateClientData>();
+
+  // Reset form when client changes or modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (client) {
+        reset({
+          firstName: client.firstName,
+          lastName: client.lastName,
+          email: client.email || '',
+          phone: client.phone || '',
+          birthDate: client.birthDate?.split('T')[0] || '',
+          gender: client.gender,
+          address: client.address || '',
+          city: client.city || '',
+          notes: client.notes || '',
+          source: client.source || '',
+        });
+      } else {
+        reset({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          birthDate: '',
+          gender: undefined,
+          address: '',
+          city: '',
+          notes: '',
+          source: '',
+        });
+      }
+    }
+  }, [isOpen, client, reset]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateClientData) => clientService.create(data),
