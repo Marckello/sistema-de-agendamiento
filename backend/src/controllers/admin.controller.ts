@@ -256,7 +256,7 @@ export async function getTenantDetail(req: Request, res: Response) {
             email: true,
             role: true,
             isActive: true,
-            lastLoginAt: true,
+            lastLogin: true,
           },
         },
         _count: {
