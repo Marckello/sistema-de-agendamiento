@@ -11,10 +11,10 @@ export default function AuthLayout() {
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-primary-600 to-primary-800 p-12 flex-col justify-between">
         <div>
           <h1 className="text-white text-3xl font-bold">
-            Gestión de Citas
+            Serrano Marketing
           </h1>
           <p className="text-primary-100 mt-2">
-            Plataforma de administración de citas
+            Sistema de Gestión de Citas
           </p>
         </div>
         
@@ -42,7 +42,7 @@ export default function AuthLayout() {
         </div>
         
         <p className="text-primary-200 text-sm">
-          © {new Date().getFullYear()} Gestión de Citas. Todos los derechos reservados.
+          © {new Date().getFullYear()} Serrano Marketing. Todos los derechos reservados.
         </p>
       </div>
 
@@ -72,7 +72,7 @@ export default function AuthLayout() {
 
         {/* Mobile footer */}
         <div className="lg:hidden p-4 text-center text-gray-500 dark:text-gray-400 text-sm">
-          © {new Date().getFullYear()} Gestión de Citas
+          © {new Date().getFullYear()} Serrano Marketing
         </div>
       </div>
     </div>
