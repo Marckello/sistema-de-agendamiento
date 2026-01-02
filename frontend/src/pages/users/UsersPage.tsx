@@ -274,7 +274,6 @@ function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) {
         role: user.role,
         canModify: user.canModify,
         canDelete: user.canDelete,
-        canUseAI: user.canUseAI,
       });
     } else if (!user && isOpen) {
       reset({
@@ -286,7 +285,6 @@ function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) {
         role: 'EMPLOYEE',
         canModify: false,
         canDelete: false,
-        canUseAI: false,
       });
     }
   }, [user, isOpen, reset]);
