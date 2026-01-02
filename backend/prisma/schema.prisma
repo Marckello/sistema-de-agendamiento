@@ -1,0 +1,638 @@
+// Prisma Schema para CitasPro - Sistema Multi-Tenant de Gestión de Citas
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================
+// MODELOS DE PLATAFORMA (Super Admin)
+// =============================================
+
+// Planes de suscripción
+model Plan {
+  id          String   @id @default(uuid())
+  name        String   @unique // free, starter, professional, enterprise
+  displayName String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  currency    String   @default("USD")
+  interval    String   @default("monthly") // monthly, yearly
+  
+  // Límites del plan
+  maxEmployees    Int @default(1)
+  maxClients      Int @default(100)
+  maxAppointments Int @default(500) // por mes
+  maxServices     Int @default(10)
+  
+  // Features
+  hasPublicBooking  Boolean @default(false)
+  hasEmailReminders Boolean @default(true)
+  hasSmsReminders   Boolean @default(false)
+  hasWebhooks       Boolean @default(false)
+  hasReports        Boolean @default(true)
+  hasCustomBranding Boolean @default(false)
+  
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  tenants Tenant[]
+  
+  @@map("plans")
+}
+
+// =============================================
+// MODELOS MULTI-TENANT
+// =============================================
+
+// Empresas/Negocios (Tenants)
+model Tenant {
+  id          String  @id @default(uuid())
+  slug        String  @unique // subdomain: slug.citaspro.com
+  name        String
+  email       String
+  phone       String?
+  description String?
+  logo        String?
+  
+  // Dirección
+  address   String?
+  city      String?
+  state     String?
+  country   String?
+  zipCode   String?
+  
+  // Configuración
+  timezone      String  @default("America/Mexico_City")
+  currency      String  @default("MXN")
+  dateFormat    String  @default("DD/MM/YYYY")
+  timeFormat    String  @default("24h") // 12h, 24h
+  weekStartsOn  Int     @default(1) // 0=Dom, 1=Lun
+  
+  // Branding
+  primaryColor   String @default("#3B82F6")
+  secondaryColor String @default("#1E40AF")
+  
+  // Webhook para n8n
+  webhookUrl    String?
+  webhookSecret String?
+  webhookActive Boolean @default(false)
+  
+  // Plan y suscripción
+  planId             String
+  plan               Plan     @relation(fields: [planId], references: [id])
+  subscriptionStatus String   @default("active") // active, past_due, canceled, trialing
+  trialEndsAt        DateTime?
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  
+  // Stripe/PayPal IDs
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  paypalSubscriptionId String?
+  
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relaciones
+  users         User[]
+  clients       Client[]
+  services      Service[]
+  categories    ServiceCategory[]
+  appointments  Appointment[]
+  workSchedules WorkSchedule[]
+  holidays      Holiday[]
+  notifications NotificationTemplate[]
+  webhookLogs   WebhookLog[]
+  
+  @@map("tenants")
+}
+
+// =============================================
+// USUARIOS Y AUTENTICACIÓN
+// =============================================
+
+// Usuarios del sistema (empleados de cada tenant)
+model User {
+  id        String  @id @default(uuid())
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  email     String
+  password  String
+  firstName String
+  lastName  String
+  phone     String?
+  avatar    String?
+  
+  role      UserRole @default(EMPLOYEE)
+  
+  // Para empleados que dan servicios
+  title     String?  // Ej: "Dr.", "Lic.", etc.
+  specialty String?  // Especialidad
+  bio       String?
+  color     String  @default("#3B82F6") // Color en calendario
+  
+  // Configuración personal
+  emailNotifications Boolean @default(true)
+  pushNotifications  Boolean @default(true)
+  theme              String  @default("system") // light, dark, system
+  
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relaciones
+  refreshTokens   RefreshToken[]
+  appointments    Appointment[]    @relation("AppointmentEmployee")
+  createdAppointments Appointment[] @relation("AppointmentCreator")
+  services        UserService[]
+  schedules       WorkSchedule[]
+  sentNotifications NotificationLog[] @relation("SentBy")
+  
+  @@unique([tenantId, email])
+  @@map("users")
+}
+
+enum UserRole {
+  SUPER_ADMIN  // Dueño de la empresa, control total
+  ADMIN        // Puede gestionar todo excepto borrar cosas críticas
+  EMPLOYEE     // Solo ve sus citas y puede reenviar recordatorios
+}
+
+// Tokens de refresco para JWT
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@map("refresh_tokens")
+}
+
+// =============================================
+// CLIENTES (CRM)
+// =============================================
+
+model Client {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Datos básicos
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String
+  phoneAlt    String?  // Teléfono alternativo
+  
+  // Datos personales (para diferentes tipos de negocio)
+  dateOfBirth DateTime?
+  gender      String?   // male, female, other, prefer_not_say
+  
+  // Identificación (opcional, para médicos, etc.)
+  idType      String?   // dni, passport, curp, etc.
+  idNumber    String?
+  
+  // Dirección
+  address     String?
+  city        String?
+  state       String?
+  country     String?
+  zipCode     String?
+  
+  // Para negocios específicos
+  occupation  String?   // Ocupación
+  company     String?   // Empresa donde trabaja
+  referredBy  String?   // Cómo nos conoció / Quién lo refirió
+  
+  // Información médica/alergias (para médicos, veterinarios, etc.)
+  allergies      String?
+  medicalNotes   String?
+  emergencyName  String?
+  emergencyPhone String?
+  
+  // Para mascotas (veterinarios)
+  petName    String?
+  petSpecies String?
+  petBreed   String?
+  petAge     String?
+  petNotes   String?
+  
+  // Marketing
+  acceptsMarketing Boolean @default(false)
+  
+  // Notas generales
+  notes      String?
+  tags       String[] @default([])
+  
+  // Estadísticas (calculadas)
+  totalVisits     Int      @default(0)
+  totalSpent      Decimal  @default(0) @db.Decimal(10, 2)
+  lastVisit       DateTime?
+  averageRating   Decimal? @db.Decimal(2, 1)
+  
+  // Estado
+  status    ClientStatus @default(ACTIVE)
+  source    String?      // web, phone, walk_in, referral, social_media
+  
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relaciones
+  appointments Appointment[]
+  
+  @@unique([tenantId, phone])
+  @@index([tenantId, email])
+  @@index([tenantId, lastName])
+  @@map("clients")
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  VIP
+  BLOCKED
+}
+
+// =============================================
+// SERVICIOS
+// =============================================
+
+// Categorías de servicios
+model ServiceCategory {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  color       String  @default("#3B82F6")
+  icon        String?
+  sortOrder   Int     @default(0)
+  
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  services Service[]
+  
+  @@unique([tenantId, name])
+  @@map("service_categories")
+}
+
+// Servicios que ofrece el negocio
+model Service {
+  id         String @id @default(uuid())
+  tenantId   String
+  tenant     Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  categoryId String?
+  category   ServiceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  
+  name        String
+  description String?
+  
+  // Duración en minutos
+  duration        Int     @default(30)
+  bufferBefore    Int     @default(0)  // Tiempo antes de la cita
+  bufferAfter     Int     @default(0)  // Tiempo después de la cita
+  
+  // Precios
+  price           Decimal @db.Decimal(10, 2)
+  depositRequired Boolean @default(false)
+  depositAmount   Decimal? @db.Decimal(10, 2)
+  depositPercent  Int?    // Porcentaje del precio como depósito
+  
+  // Configuración
+  maxAttendees    Int     @default(1) // Para citas grupales
+  isPublic        Boolean @default(true) // Mostrar en booking público
+  requiresConfirm Boolean @default(false) // Requiere confirmación manual
+  
+  color     String  @default("#3B82F6")
+  image     String?
+  sortOrder Int     @default(0)
+  
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relaciones
+  appointments Appointment[]
+  employees    UserService[]
+  
+  @@unique([tenantId, name])
+  @@map("services")
+}
+
+// Relación muchos a muchos entre usuarios y servicios
+model UserService {
+  id        String  @id @default(uuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  // Precio personalizado por empleado (opcional)
+  customPrice    Decimal? @db.Decimal(10, 2)
+  customDuration Int?
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, serviceId])
+  @@map("user_services")
+}
+
+// =============================================
+// HORARIOS Y DISPONIBILIDAD
+// =============================================
+
+// Horarios de trabajo
+model WorkSchedule {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userId   String? // Si es null, aplica a todo el negocio
+  user     User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  dayOfWeek Int // 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
+  
+  isWorking   Boolean @default(true)
+  startTime   String  // "09:00"
+  endTime     String  // "18:00"
+  
+  // Horario de descanso/comida
+  breakStart  String? // "14:00"
+  breakEnd    String? // "15:00"
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([tenantId, userId, dayOfWeek])
+  @@map("work_schedules")
+}
+
+// Días festivos o bloqueados
+model Holiday {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name      String
+  date      DateTime @db.Date
+  isFullDay Boolean  @default(true)
+  startTime String?  // Si no es día completo
+  endTime   String?
+  
+  isRecurring Boolean @default(false) // Repetir cada año
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("holidays")
+}
+
+// =============================================
+// CITAS
+// =============================================
+
+model Appointment {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  // Referencias principales
+  clientId   String
+  client     Client  @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  employeeId String
+  employee   User    @relation("AppointmentEmployee", fields: [employeeId], references: [id], onDelete: Cascade)
+  serviceId  String
+  service    Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  
+  // Fecha y hora
+  date      DateTime @db.Date
+  startTime String   // "09:00"
+  endTime   String   // "09:30"
+  duration  Int      // Duración en minutos
+  
+  // Estado
+  status AppointmentStatus @default(PENDING)
+  
+  // Precios
+  price         Decimal  @db.Decimal(10, 2)
+  depositPaid   Decimal  @default(0) @db.Decimal(10, 2)
+  finalPrice    Decimal? @db.Decimal(10, 2) // Precio final después de descuentos
+  discount      Decimal  @default(0) @db.Decimal(10, 2)
+  discountType  String?  // percent, fixed
+  
+  // Notas
+  notes         String?  // Notas internas
+  clientNotes   String?  // Notas del cliente al agendar
+  
+  // Recordatorios
+  reminderSent     Boolean   @default(false)
+  reminderSentAt   DateTime?
+  reminder24hSent  Boolean   @default(false)
+  reminder1hSent   Boolean   @default(false)
+  
+  // Seguimiento
+  source          String    @default("internal") // internal, public_booking, phone, etc.
+  confirmedAt     DateTime?
+  completedAt     DateTime?
+  canceledAt      DateTime?
+  cancelReason    String?
+  canceledBy      String?   // user_id o "client"
+  
+  // Pago
+  paymentStatus   PaymentStatus @default(PENDING)
+  paymentMethod   String?       // cash, card, transfer, etc.
+  paymentRef      String?       // Referencia de pago
+  paidAt          DateTime?
+  
+  // Rating/Review
+  rating          Int?      // 1-5
+  review          String?
+  reviewedAt      DateTime?
+  
+  // Metadatos
+  createdById String?
+  createdBy   User?    @relation("AppointmentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relaciones
+  notifications NotificationLog[]
+  
+  @@index([tenantId, date])
+  @@index([tenantId, employeeId, date])
+  @@index([tenantId, clientId])
+  @@index([tenantId, status])
+  @@map("appointments")
+}
+
+enum AppointmentStatus {
+  PENDING      // Pendiente de confirmación
+  CONFIRMED    // Confirmada
+  IN_PROGRESS  // En curso
+  COMPLETED    // Completada
+  CANCELED     // Cancelada
+  NO_SHOW      // No se presentó
+  RESCHEDULED  // Reagendada
+}
+
+enum PaymentStatus {
+  PENDING    // Pendiente
+  PARTIAL    // Pago parcial (depósito)
+  PAID       // Pagado
+  REFUNDED   // Reembolsado
+  FAILED     // Fallido
+}
+
+// =============================================
+// NOTIFICACIONES
+// =============================================
+
+// Plantillas de notificación personalizables
+model NotificationTemplate {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  type     NotificationType
+  channel  NotificationChannel
+  
+  subject  String
+  body     String   // Soporta variables: {{client_name}}, {{date}}, {{time}}, etc.
+  
+  isActive Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([tenantId, type, channel])
+  @@map("notification_templates")
+}
+
+enum NotificationType {
+  APPOINTMENT_CREATED
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_REMINDER_24H
+  APPOINTMENT_REMINDER_1H
+  APPOINTMENT_CANCELED
+  APPOINTMENT_RESCHEDULED
+  APPOINTMENT_COMPLETED
+  WELCOME_CLIENT
+  BOOKING_LINK
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  WEBHOOK
+}
+
+// Log de notificaciones enviadas
+model NotificationLog {
+  id            String @id @default(uuid())
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  
+  type      NotificationType
+  channel   NotificationChannel
+  recipient String    // email o teléfono
+  subject   String?
+  body      String
+  
+  status    String    @default("pending") // pending, sent, delivered, failed
+  error     String?
+  sentAt    DateTime?
+  
+  sentById  String?
+  sentBy    User?     @relation("SentBy", fields: [sentById], references: [id], onDelete: SetNull)
+  
+  createdAt DateTime @default(now())
+  
+  @@index([appointmentId])
+  @@map("notification_logs")
+}
+
+// =============================================
+// WEBHOOKS
+// =============================================
+
+// Log de webhooks enviados a n8n
+model WebhookLog {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  event       String   // appointment.created, appointment.updated, etc.
+  payload     Json     // Datos enviados
+  url         String   // URL del webhook
+  
+  status      Int?     // HTTP status code
+  response    String?  // Respuesta del servidor
+  error       String?
+  
+  attempts    Int      @default(1)
+  lastAttempt DateTime @default(now())
+  
+  createdAt DateTime @default(now())
+  
+  @@index([tenantId, event])
+  @@map("webhook_logs")
+}
+
+// =============================================
+// SUPER ADMIN (Plataforma)
+// =============================================
+
+model PlatformAdmin {
+  id        String @id @default(uuid())
+  email     String @unique
+  password  String
+  firstName String
+  lastName  String
+  
+  isActive  Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@map("platform_admins")
+}
+
+// Logs de auditoría para Super Admin
+model AuditLog {
+  id       String @id @default(uuid())
+  tenantId String?
+  userId   String?
+  adminId  String?
+  
+  action    String   // create, update, delete, login, etc.
+  entity    String   // user, client, appointment, etc.
+  entityId  String?
+  oldData   Json?
+  newData   Json?
+  ipAddress String?
+  userAgent String?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([tenantId])
+  @@index([userId])
+  @@index([action, entity])
+  @@map("audit_logs")
+}
