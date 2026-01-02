@@ -9,6 +9,7 @@ import bookingRoutes from './booking.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import publicRoutes from './public.routes.js';
 import chatRoutes from './chat.routes.js';
+import whatsappRoutes from './whatsapp.routes.js';
 import { extractTenant } from '../middleware/tenant.js';
 
 const router = Router();
@@ -33,6 +34,7 @@ router.use('/users', usersRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/chat', chatRoutes);
+router.use('/whatsapp', whatsappRoutes);
 
 // Health check
 router.get('/health', (req, res) => {

@@ -43,6 +43,10 @@ Desktop.ini
 # Prisma
 prisma/migrations/**/migration.sql
 
+# WhatsApp sessions (sensitive data)
+.wwebjs_auth/
+.wwebjs_cache/
+
 # Temporary files
 tmp/
 temp/

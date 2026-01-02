@@ -9,11 +9,13 @@ import {
   BellIcon,
   GlobeAltIcon,
   ClockIcon,
+  ChatBubbleOvalLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
 import { settingsService } from '@/services/settings';
 import { TenantSettings } from '@/types';
+import WhatsAppSettings from '@/components/settings/WhatsAppSettings';
 
-type SettingsTab = 'general' | 'branding' | 'booking' | 'notifications' | 'webhook' | 'schedule';
+type SettingsTab = 'general' | 'branding' | 'booking' | 'notifications' | 'webhook' | 'schedule' | 'whatsapp';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -32,6 +34,7 @@ export default function SettingsPage() {
     { id: 'notifications' as const, label: 'Notificaciones', icon: BellIcon },
     { id: 'webhook' as const, label: 'Webhooks', icon: GlobeAltIcon },
     { id: 'schedule' as const, label: 'Horarios', icon: ClockIcon },
+    { id: 'whatsapp' as const, label: 'WhatsApp', icon: ChatBubbleOvalLeftEllipsisIcon },
   ];
 
   return (
@@ -81,6 +84,7 @@ export default function SettingsPage() {
               {activeTab === 'notifications' && <NotificationSettings settings={settings} />}
               {activeTab === 'webhook' && <WebhookSettings settings={settings} />}
               {activeTab === 'schedule' && <ScheduleSettings />}
+              {activeTab === 'whatsapp' && <WhatsAppSettings />}
             </>
           )}
         </div>

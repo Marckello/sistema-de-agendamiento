@@ -1,7 +1,7 @@
 # CitasPro - Documentación Completa del Proyecto
 
 **Última actualización:** 2 de Enero de 2026  
-**Versión:** 1.1.0  
+**Versión:** 1.2.0  
 **Cliente:** Serrano Marketing  
 **Repositorio:** https://github.com/Marckello/sistema-de-agendamiento.git
 
@@ -20,12 +20,13 @@
 9. [Credenciales de Prueba](#credenciales-de-prueba)
 10. [Diseño Visual (Blitzit Style)](#diseño-visual-blitzit-style)
 11. [Funcionalidad de IA](#funcionalidad-de-ia)
-12. [Sistema de Permisos](#sistema-de-permisos)
-13. [Sistema de Horarios Flexibles](#sistema-de-horarios-flexibles)
-14. [Problemas Resueltos](#problemas-resueltos)
-15. [Comandos Útiles](#comandos-útiles)
-16. [Despliegue EasyPanel](#despliegue-easypanel-desde-git)
-17. [Contexto para Continuación](#contexto-para-continuación)
+12. [Integración WhatsApp](#integración-whatsapp)
+13. [Sistema de Permisos](#sistema-de-permisos)
+14. [Sistema de Horarios Flexibles](#sistema-de-horarios-flexibles)
+15. [Problemas Resueltos](#problemas-resueltos)
+16. [Comandos Útiles](#comandos-útiles)
+17. [Despliegue EasyPanel](#despliegue-easypanel-desde-git)
+18. [Contexto para Continuación](#contexto-para-continuación)
 
 ---
 
@@ -47,6 +48,7 @@
 - **Calendario visual**: Vista de citas por día/semana/mes
 - **Dashboard con estadísticas**: Gráficos de citas, ingresos, clientes
 - **Asistente de IA**: Chat con OpenAI para gestión por lenguaje natural
+- **Integración WhatsApp**: Recordatorios automáticos vía WhatsApp Web
 - **Notificaciones por email**: Confirmaciones, recordatorios, cancelaciones
 - **Diseño moderno**: Estilo Blitzit (tema oscuro elegante)
 
@@ -179,6 +181,7 @@ e:\Gestión de Citas\
 │       │   ├── 📄 services.routes.ts
 │       │   ├── 📄 settings.routes.ts
 │       │   ├── 📄 users.routes.ts
+│       │   ├── 📄 whatsapp.routes.ts       # 📱 WHATSAPP ROUTES
 │       │   └── 📄 index.ts         # ⭐ REGISTRO DE TODAS LAS RUTAS
 │       │
 │       ├── 📁 services/
@@ -187,6 +190,8 @@ e:\Gestión de Citas\
 │       │   ├── 📄 auth.service.ts
 │       │   ├── 📄 email.service.ts
 │       │   ├── 📄 webhook.service.ts
+│       │   ├── 📄 whatsapp.service.ts      # 📱 WHATSAPP SERVICE
+│       │   ├── 📄 reminder.scheduler.ts    # 📱 SCHEDULER RECORDATORIOS
 │       │   └── 📄 index.ts
 │       │
 │       └── 📁 utils/
@@ -656,7 +661,130 @@ function getOpenAI(): OpenAI {
 
 ---
 
-## 🔒 Sistema de Permisos
+## � Integración WhatsApp
+
+### Descripción
+Integración con WhatsApp Web usando la librería `whatsapp-web.js` para enviar recordatorios automáticos de citas a los clientes. Incluye sistema anti-ban y conexión por QR.
+
+### Archivos Principales
+
+| Archivo | Descripción |
+|---------|-------------|
+| `backend/src/services/whatsapp.service.ts` | Servicio principal de WhatsApp |
+| `backend/src/services/reminder.scheduler.ts` | Scheduler de recordatorios automáticos |
+| `backend/src/controllers/whatsapp.controller.ts` | Endpoints de WhatsApp |
+| `backend/src/routes/whatsapp.routes.ts` | Rutas /api/whatsapp |
+| `frontend/src/services/whatsapp.ts` | Cliente API |
+| `frontend/src/components/settings/WhatsAppSettings.tsx` | UI de configuración |
+
+### Características Anti-Ban
+
+| Característica | Configuración | Descripción |
+|----------------|---------------|-------------|
+| **Delay entre mensajes** | 3-8 segundos | Tiempo aleatorio entre envíos |
+| **Simulación de escritura** | 1.5-4 segundos | Muestra "typing..." antes de enviar |
+| **Límite diario** | 50 mensajes | Máximo mensajes por día |
+| **Burst control** | 5 mensajes + 1 min cooldown | Evita ráfagas |
+| **Horario de operación** | 8:00 - 20:00 | No envía fuera de horario |
+| **Auto-connect/disconnect** | Configurable | Conecta y desconecta automáticamente |
+
+### Modelos de Base de Datos
+
+```prisma
+model WhatsAppSession {
+  id        String @id @default(uuid())
+  tenantId  String @unique
+  
+  status      WhatsAppStatus @default(DISCONNECTED)
+  phone       String?
+  pushName    String?
+  sessionData Json?
+  
+  // Anti-ban
+  dailyMessageCount  Int @default(0)
+  lastMessageAt      DateTime?
+  dailyLimitReached  Boolean @default(false)
+  
+  // Auto-connect
+  autoConnectEnabled Boolean @default(false)
+  connectAt          String? // "08:00"
+  disconnectAt       String? // "20:00"
+  
+  // Recordatorios
+  reminderEnabled    Boolean @default(true)
+  reminder24hEnabled Boolean @default(true)
+  reminder1hEnabled  Boolean @default(true)
+  reminderMessage24h String
+  reminderMessage1h  String
+  
+  // Estadísticas
+  totalMessagesSent     Int @default(0)
+  totalMessagesReceived Int @default(0)
+}
+
+enum WhatsAppStatus {
+  DISCONNECTED
+  CONNECTING
+  QR_READY
+  AUTHENTICATED
+  CONNECTED
+  SLEEPING
+}
+```
+
+### Endpoints de la API
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/whatsapp/connect` | Iniciar conexión (genera QR) |
+| GET | `/api/whatsapp/status` | Obtener estado actual |
+| GET | `/api/whatsapp/qr` | Obtener QR code |
+| POST | `/api/whatsapp/disconnect` | Desconectar |
+| GET | `/api/whatsapp/config` | Obtener configuración |
+| PUT | `/api/whatsapp/config` | Actualizar configuración |
+| POST | `/api/whatsapp/send-test` | Enviar mensaje de prueba |
+| POST | `/api/whatsapp/send-reminder/:id` | Enviar recordatorio manual |
+| GET | `/api/whatsapp/logs` | Historial de mensajes |
+
+### Configuración desde UI
+
+1. Ir a **Configuración → WhatsApp**
+2. Click en **"Conectar WhatsApp"**
+3. Escanear QR con WhatsApp del teléfono
+4. Configurar:
+   - Horario de auto-conexión
+   - Mensajes de recordatorio (24h y 1h)
+   - Respuesta automática
+
+### Variables de Mensaje
+
+| Variable | Descripción |
+|----------|-------------|
+| `{clientName}` | Nombre del cliente |
+| `{serviceName}` | Nombre del servicio |
+| `{time}` | Hora de la cita |
+| `{date}` | Fecha de la cita |
+
+### Scheduler de Recordatorios
+
+El scheduler (`reminder.scheduler.ts`) ejecuta:
+- **Cada 15 minutos**: Verifica citas que necesitan recordatorio
+- **A medianoche**: Resetea contadores diarios de mensajes
+- **Cada 5 minutos**: Verifica auto-conexión de sesiones
+
+### Dependencias
+
+```json
+{
+  "whatsapp-web.js": "^1.26.0",
+  "qrcode": "^1.5.4",
+  "node-cron": "^3.0.3"
+}
+```
+
+---
+
+## �🔒 Sistema de Permisos
 
 ### Campos de Usuario
 

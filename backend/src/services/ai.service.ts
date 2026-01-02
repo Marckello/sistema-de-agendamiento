@@ -24,32 +24,98 @@ interface ChatContext {
 }
 
 interface AppointmentAction {
-  action: 'create' | 'cancel' | 'reschedule' | 'query';
-  details: Record<string, any>;
+  action: 'create' | 'cancel' | 'reschedule' | 'query' | 'create_client';
+  params: Record<string, any>;
   confirmation?: string;
 }
 
-const SYSTEM_PROMPT = `Eres un asistente de gestión de citas para CitasPro. Tu trabajo es ayudar a consultar, crear, cancelar y reagendar citas.
+const SYSTEM_PROMPT = `Eres un asistente de gestión de citas altamente inteligente y conversacional para CitasPro. Tu personalidad es amable, profesional y eficiente.
 
-REGLAS IMPORTANTES:
-1. Siempre responde en español
-2. Sé conciso y profesional
-3. Para CUALQUIER acción que modifique citas (crear, cancelar, reagendar), SIEMPRE pide confirmación antes de ejecutar
-4. Cuando consultes citas, muestra la información de forma clara y organizada
-5. Usa formato de hora 12h (ej: 4:00 PM) para mejor legibilidad
+## TU ESTILO DE COMUNICACIÓN:
+- Eres CONVERSACIONAL, no un formulario. Haz UNA pregunta a la vez.
+- Usa un tono cálido y profesional.
+- Cuando el usuario quiera agendar, guíalo paso a paso de forma natural.
+- NUNCA pidas todos los datos de golpe. Fluye naturalmente en la conversación.
+- Usa emojis ocasionalmente para ser más amigable 📅 ✨ 👋
 
-CAPACIDADES:
-- Consultar citas de hoy, mañana, una fecha específica
-- Consultar citas por empleado
-- Ver resumen de citas (cuántas hay, estados)
-- Crear nuevas citas (requiere confirmación)
-- Cancelar citas (requiere confirmación)
-- Reagendar citas (requiere confirmación)
+## FLUJO PARA AGENDAR UNA CITA:
 
-Cuando el usuario pida una acción, responde con un JSON en el siguiente formato si necesitas ejecutar una función:
-{"action": "query|create|cancel|reschedule", "params": {...}}
+### Paso 1 - Identificar al cliente:
+Cuando te pidan agendar una cita, PRIMERO pregunta:
+"¡Claro! 😊 ¿Es un cliente nuevo o ya está registrado con nosotros?"
 
-Para consultas simples, responde directamente con texto.`;
+### Paso 2A - Si es CLIENTE NUEVO:
+Pide los datos uno por uno de forma conversacional:
+1. "Perfecto, ¿cuál es el nombre completo del cliente?"
+2. "¿Y su número de teléfono para contactarlo?"
+(El correo es opcional, solo pídelo si el usuario lo menciona)
+
+Cuando tengas nombre y teléfono, registra al cliente con:
+{"action": "create_client", "params": {"firstName": "Nombre", "lastName": "Apellido", "phone": "teléfono", "email": "opcional"}}
+
+### Paso 2B - Si es CLIENTE REGISTRADO:
+Pregunta: "¿Me puedes dar su nombre, teléfono o correo para buscarlo?"
+
+Busca en la lista de clientes del contexto. Si encuentras coincidencias, confirma cuál es.
+Si no encuentras ninguno, sugiere registrarlo como nuevo.
+
+### Paso 3 - Seleccionar servicio:
+Una vez identificado el cliente, pregunta:
+"Perfecto, ¿qué servicio necesita [Nombre]?"
+Puedes mencionar los servicios disponibles del contexto.
+
+### Paso 4 - Fecha y hora:
+"¿Para qué día y hora te gustaría la cita?"
+Sé flexible con formatos: "mañana", "el viernes", "3 de enero", "a las 4", "16:00", etc.
+
+### Paso 5 - Confirmar:
+Resume la cita completa y pide confirmación:
+"Perfecto, voy a agendar:
+📅 Cliente: [Nombre]
+💼 Servicio: [Servicio]
+📆 Fecha: [Fecha legible]
+🕐 Hora: [Hora en 12h]
+
+¿Confirmo la cita?"
+
+Solo cuando el usuario confirme (sí, ok, confirma, adelante, etc.), emite el JSON:
+{"action": "create", "params": {"clientId": "ID", "serviceId": "ID", "date": "YYYY-MM-DD", "startTime": "HH:MM"}}
+
+## BÚSQUEDA INTELIGENTE DE CLIENTES:
+- Si dicen "María", busca todos los clientes cuyo nombre contenga "María" en el contexto
+- Si dan un teléfono parcial, busca coincidencias
+- Si hay varios resultados, muéstralos y pregunta cuál es
+- Si no hay resultados, sugiere registrar como nuevo
+
+## OTRAS CAPACIDADES:
+- Consultar citas de hoy, mañana, fecha específica
+- Cancelar citas (pregunta cuál y confirma antes)
+- Reagendar citas (pregunta la nueva fecha/hora)
+- Informar sobre servicios disponibles y precios
+
+## FORMATO DE ACCIONES JSON:
+
+Crear cliente nuevo:
+{"action": "create_client", "params": {"firstName": "Nombre", "lastName": "Apellido", "phone": "tel", "email": "correo"}}
+
+Crear cita (solo con TODOS los datos y confirmación):
+{"action": "create", "params": {"clientId": "UUID", "serviceId": "UUID", "date": "YYYY-MM-DD", "startTime": "HH:MM"}}
+
+Cancelar cita:
+{"action": "cancel", "params": {"appointmentId": "UUID", "reason": "motivo"}}
+
+Reagendar:
+{"action": "reschedule", "params": {"appointmentId": "UUID", "newDate": "YYYY-MM-DD", "newStartTime": "HH:MM"}}
+
+## REGLAS CRÍTICAS:
+1. SIEMPRE responde en español
+2. NUNCA pidas todos los datos juntos - sé conversacional, UNA pregunta a la vez
+3. NUNCA inventes IDs - usa SOLO los del contexto
+4. SIEMPRE confirma antes de ejecutar acciones
+5. Si no entiendes algo, pide clarificación amablemente
+6. Interpreta fechas relativas: "mañana", "pasado mañana", "el lunes", etc.
+7. Interpreta horas flexibles: "a las 4", "4pm", "16:00", "cuatro de la tarde"
+8. NO emitas JSON hasta tener TODOS los datos Y confirmación del usuario`;
 
 export class AIService {
   private context: ChatContext;
@@ -103,6 +169,20 @@ export class AIService {
     const weekEnd = new Date(today);
     weekEnd.setDate(weekEnd.getDate() + 7);
 
+    // Obtener servicios disponibles
+    const services = await prisma.service.findMany({
+      where: { tenantId: this.context.tenantId, isActive: true },
+      select: { id: true, name: true, duration: true, price: true },
+    });
+
+    // Obtener clientes del tenant
+    const clients = await prisma.client.findMany({
+      where: { tenantId: this.context.tenantId, isActive: true },
+      select: { id: true, firstName: true, lastName: true, phone: true, email: true },
+      take: 100,
+      orderBy: { lastName: 'asc' },
+    });
+
     // Filtro base según el rol
     const baseWhere: any = {
       tenantId: this.context.tenantId,
@@ -152,7 +232,28 @@ export class AIService {
     let context = `Usuario: ${this.context.userName} (${this.context.userRole})\n`;
     context += `Fecha actual: ${today.toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}\n\n`;
 
-    context += `=== CITAS DE HOY (${todayAppointments.length}) ===\n`;
+    // Listar servicios disponibles
+    context += `=== 💼 SERVICIOS DISPONIBLES (${services.length}) ===\n`;
+    if (services.length === 0) {
+      context += 'No hay servicios configurados.\n';
+    } else {
+      services.forEach((svc) => {
+        context += `• ${svc.name} | ID: ${svc.id} | ${svc.duration} min | $${svc.price}\n`;
+      });
+    }
+
+    // Listar clientes
+    context += `\n=== 👥 CLIENTES REGISTRADOS (${clients.length}) ===\n`;
+    if (clients.length === 0) {
+      context += 'No hay clientes registrados aún.\n';
+    } else {
+      clients.forEach((cli) => {
+        const email = cli.email ? ` | ${cli.email}` : '';
+        context += `• ${cli.firstName} ${cli.lastName} | ID: ${cli.id} | Tel: ${cli.phone || 'N/A'}${email}\n`;
+      });
+    }
+
+    context += `\n=== CITAS DE HOY (${todayAppointments.length}) ===\n`;
     if (todayAppointments.length === 0) {
       context += 'No hay citas programadas para hoy.\n';
     } else {
@@ -183,12 +284,15 @@ export class AIService {
 
   private parseAction(response: string): AppointmentAction | undefined {
     // Intentar extraer JSON de la respuesta
-    const jsonMatch = response.match(/\{[\s\S]*"action"[\s\S]*\}/);
+    const jsonMatch = response.match(/\{[\s\S]*?"action"[\s\S]*?\}/);
     if (jsonMatch) {
       try {
         const parsed = JSON.parse(jsonMatch[0]);
-        if (parsed.action && ['create', 'cancel', 'reschedule', 'query'].includes(parsed.action)) {
-          return parsed as AppointmentAction;
+        if (parsed.action && ['create', 'cancel', 'reschedule', 'query', 'create_client'].includes(parsed.action)) {
+          return {
+            action: parsed.action,
+            params: parsed.params || parsed.details || {},
+          };
         }
       } catch {
         // No es un JSON válido, ignorar
@@ -200,36 +304,90 @@ export class AIService {
   async executeAction(action: AppointmentAction): Promise<string> {
     switch (action.action) {
       case 'create':
-        return this.createAppointment(action.details);
+        return this.createAppointment(action.params);
+      case 'create_client':
+        return this.createClient(action.params);
       case 'cancel':
-        return this.cancelAppointment(action.details);
+        return this.cancelAppointment(action.params);
       case 'reschedule':
-        return this.rescheduleAppointment(action.details);
+        return this.rescheduleAppointment(action.params);
       default:
         return 'Acción no reconocida';
     }
   }
 
-  private async createAppointment(details: any): Promise<string> {
-    // Implementación simplificada - en producción validar todos los campos
+  private async createClient(params: any): Promise<string> {
     try {
+      if (!params.firstName) {
+        return '❌ Falta el nombre del cliente.';
+      }
+
+      const client = await prisma.client.create({
+        data: {
+          tenantId: this.context.tenantId,
+          firstName: params.firstName,
+          lastName: params.lastName || '',
+          phone: params.phone || null,
+          email: params.email || null,
+          isActive: true,
+        },
+      });
+
+      return `✅ ¡Cliente registrado exitosamente!\n\n👤 **${client.firstName} ${client.lastName}**\nID: ${client.id}\n📞 ${client.phone || 'Sin teléfono'}\n📧 ${client.email || 'Sin correo'}\n\nAhora podemos continuar con la cita. ¿Qué servicio necesita?`;
+    } catch (error: any) {
+      console.error('Error creando cliente:', error);
+      return `❌ Error al registrar el cliente: ${error.message}`;
+    }
+  }
+
+  private async createAppointment(params: any): Promise<string> {
+    try {
+      // Validaciones
+      if (!params.serviceId) {
+        return '❌ Falta seleccionar el servicio.';
+      }
+      if (!params.clientId) {
+        return '❌ Falta identificar al cliente.';
+      }
+      if (!params.date) {
+        return '❌ Falta la fecha de la cita.';
+      }
+      if (!params.startTime) {
+        return '❌ Falta la hora de la cita.';
+      }
+
       const service = await prisma.service.findFirst({
-        where: { id: details.serviceId },
+        where: { id: params.serviceId, tenantId: this.context.tenantId },
       });
       
       if (!service) {
-        return '❌ Servicio no encontrado';
+        return '❌ Servicio no encontrado.';
       }
+
+      const client = await prisma.client.findFirst({
+        where: { id: params.clientId, tenantId: this.context.tenantId },
+      });
+
+      if (!client) {
+        return '❌ Cliente no encontrado.';
+      }
+
+      // Calcular hora de fin
+      const [hours, minutes] = params.startTime.split(':').map(Number);
+      const startDate = new Date();
+      startDate.setHours(hours, minutes, 0, 0);
+      const endDate = new Date(startDate.getTime() + service.duration * 60000);
+      const endTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
 
       const appointment = await prisma.appointment.create({
         data: {
           tenantId: this.context.tenantId,
-          clientId: details.clientId,
-          serviceId: details.serviceId,
-          employeeId: details.employeeId || this.context.userId,
-          date: new Date(details.date),
-          startTime: details.startTime,
-          endTime: details.endTime,
+          clientId: params.clientId,
+          serviceId: params.serviceId,
+          employeeId: params.employeeId || this.context.userId,
+          date: new Date(params.date),
+          startTime: params.startTime,
+          endTime: endTime,
           duration: service.duration,
           price: service.price,
           status: 'CONFIRMED',
@@ -240,8 +398,21 @@ export class AIService {
         },
       });
 
-      return `✅ Cita creada exitosamente:\n- Cliente: ${appointment.client.firstName} ${appointment.client.lastName}\n- Servicio: ${appointment.service.name}\n- Fecha: ${new Date(appointment.date).toLocaleDateString('es-ES')}\n- Hora: ${appointment.startTime}`;
+      const dateFormatted = new Date(appointment.date).toLocaleDateString('es-ES', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+
+      // Formatear hora a 12h
+      const hour12 = hours > 12 ? hours - 12 : (hours === 0 ? 12 : hours);
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const timeFormatted = `${hour12}:${String(minutes).padStart(2, '0')} ${ampm}`;
+
+      return `✅ ¡Cita agendada exitosamente!\n\n📅 **Resumen de la cita:**\n👤 Cliente: ${appointment.client.firstName} ${appointment.client.lastName}\n💼 Servicio: ${appointment.service.name}\n📆 Fecha: ${dateFormatted}\n🕐 Hora: ${timeFormatted}\n⏱️ Duración: ${service.duration} minutos\n💰 Precio: $${service.price}\n\n¿Hay algo más en lo que pueda ayudarte? 😊`;
     } catch (error: any) {
+      console.error('Error creando cita:', error);
       return `❌ Error al crear la cita: ${error.message}`;
     }
   }

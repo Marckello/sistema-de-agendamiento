@@ -7,6 +7,7 @@ import { config, validateConfig } from './config/index.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import prisma from './config/database.js';
+import { reminderScheduler } from './services/reminder.scheduler.js';
 
 // Validar configuración
 validateConfig();
@@ -79,6 +80,10 @@ async function start() {
     // Verificar conexión a la base de datos
     await prisma.$connect();
     console.log('✅ Database connected');
+    
+    // Iniciar scheduler de recordatorios
+    reminderScheduler.start();
+    console.log('✅ Reminder scheduler started');
     
     app.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);

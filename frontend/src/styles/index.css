@@ -409,10 +409,11 @@
 }
 
 /* ========================================
-   REACT BIG CALENDAR - Blitzit Theme
+   REACT BIG CALENDAR - Blitzit Dark Theme
    ======================================== */
 .rbc-calendar {
   @apply bg-dark-900/60 backdrop-blur-xl border border-dark-800/50 rounded-2xl overflow-hidden;
+  font-family: inherit;
 }
 
 .rbc-toolbar {
@@ -432,28 +433,117 @@
 }
 
 .rbc-header {
-  @apply py-3 text-sm font-semibold text-gray-400 border-b border-dark-800/50;
+  @apply py-3 px-2 text-sm font-semibold text-gray-400 border-b border-dark-800/50 bg-dark-900/80;
 }
 
-.rbc-month-view,
-.rbc-time-view {
-  @apply border-0;
+.rbc-header + .rbc-header {
+  @apply border-l border-dark-800/30;
 }
 
+/* Month view */
+.rbc-month-view {
+  @apply border-0 bg-dark-900/40;
+}
+
+.rbc-month-row {
+  @apply border-b border-dark-800/30;
+}
+
+.rbc-month-row + .rbc-month-row {
+  @apply border-t-0;
+}
+
+/* Day background */
 .rbc-day-bg {
-  @apply bg-transparent;
+  @apply bg-dark-900/20 transition-colors;
+}
+
+.rbc-day-bg:hover {
+  @apply bg-dark-800/40;
+}
+
+.rbc-day-bg + .rbc-day-bg {
+  @apply border-l border-dark-800/30;
 }
 
 .rbc-day-bg.rbc-today {
-  @apply bg-primary-500/10;
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%);
 }
 
 .rbc-day-bg.rbc-off-range-bg {
-  @apply bg-dark-950/50;
+  @apply bg-dark-950/60;
 }
 
+/* Time view (Week/Day) */
+.rbc-time-view {
+  @apply border-0 bg-dark-900/40;
+}
+
+.rbc-time-header {
+  @apply bg-dark-900/80;
+}
+
+.rbc-time-header-content {
+  @apply border-l border-dark-800/30;
+}
+
+.rbc-time-header-gutter {
+  @apply bg-dark-900/80;
+}
+
+/* Time column (hours) */
+.rbc-time-gutter {
+  @apply bg-dark-900/60;
+}
+
+.rbc-label {
+  @apply text-xs text-gray-500 font-medium px-2;
+}
+
+/* Time slots - IMPORTANT: This fixes the white lines */
+.rbc-time-slot {
+  @apply border-t-0;
+  min-height: 20px;
+}
+
+.rbc-timeslot-group {
+  @apply border-b border-dark-800/20;
+  min-height: 60px;
+}
+
+.rbc-time-content {
+  @apply border-t border-dark-800/30;
+}
+
+.rbc-time-content > * + * > * {
+  @apply border-l border-dark-800/20;
+}
+
+/* Day column in week/day view */
+.rbc-day-slot {
+  @apply bg-dark-900/30;
+}
+
+.rbc-day-slot .rbc-time-slot {
+  @apply border-t border-dark-800/10;
+}
+
+.rbc-day-slot .rbc-time-slot:first-child {
+  @apply border-t-0;
+}
+
+/* Today column highlight */
+.rbc-today {
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0.02) 100%) !important;
+}
+
+/* Events */
 .rbc-event {
-  @apply bg-gradient-to-r from-primary-500 to-primary-600 border-none rounded-lg px-2 py-1;
+  @apply bg-gradient-to-r from-primary-500 to-primary-600 border-none rounded-lg px-2 py-1 shadow-md;
+}
+
+.rbc-event:focus {
+  @apply outline-none ring-2 ring-primary-400 ring-offset-2 ring-offset-dark-900;
 }
 
 .rbc-event.rbc-selected {
@@ -464,20 +554,29 @@
   @apply text-white text-xs font-medium;
 }
 
-.rbc-time-slot {
-  @apply border-t border-dark-800/30;
+.rbc-event-label {
+  @apply text-white/80 text-xs;
 }
 
-.rbc-timeslot-group {
-  @apply border-b border-dark-800/50;
+/* All day events */
+.rbc-allday-cell {
+  @apply border-b border-dark-800/30 bg-dark-900/60;
 }
 
+.rbc-row-segment {
+  @apply p-0.5;
+}
+
+/* Current time indicator */
 .rbc-current-time-indicator {
-  @apply bg-primary-500 h-0.5;
+  @apply h-0.5 z-10;
+  background: linear-gradient(90deg, transparent, #10B981, #10B981, transparent);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
 }
 
+/* Date cells */
 .rbc-date-cell {
-  @apply text-right p-2 text-sm text-gray-400;
+  @apply text-right p-2 text-sm text-gray-400 font-medium;
 }
 
 .rbc-date-cell.rbc-now {
@@ -488,14 +587,60 @@
   @apply text-dark-600;
 }
 
-.rbc-time-header-content {
-  @apply border-l border-dark-800/50;
+.rbc-date-cell > a {
+  @apply hover:text-primary-400 transition-colors;
 }
 
-.rbc-time-content {
-  @apply border-t border-dark-800/50;
+/* Agenda view */
+.rbc-agenda-view {
+  @apply bg-dark-900/40;
 }
 
-.rbc-allday-cell {
-  @apply border-b border-dark-800/50;
+.rbc-agenda-view table.rbc-agenda-table {
+  @apply border-0;
+}
+
+.rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+  @apply py-3 px-4 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider 
+         bg-dark-900/80 border-b border-dark-800/50;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+  @apply py-3 px-4 text-sm text-gray-300 border-b border-dark-800/30;
+}
+
+.rbc-agenda-view table.rbc-agenda-table tbody > tr:hover {
+  @apply bg-dark-800/40;
+}
+
+.rbc-agenda-date-cell,
+.rbc-agenda-time-cell {
+  @apply text-gray-400 whitespace-nowrap;
+}
+
+.rbc-agenda-event-cell {
+  @apply text-white;
+}
+
+/* Show more link */
+.rbc-show-more {
+  @apply text-primary-400 text-xs font-medium hover:text-primary-300 transition-colors;
+}
+
+/* Selection overlay */
+.rbc-slot-selection {
+  @apply bg-primary-500/30 border border-primary-500/50 rounded-lg;
+}
+
+/* Remove default borders that cause white lines */
+.rbc-time-view .rbc-row {
+  @apply border-0;
+}
+
+.rbc-time-header.rbc-overflowing {
+  @apply border-r-0;
+}
+
+.rbc-time-header-content .rbc-row.rbc-row-resource {
+  @apply border-b border-dark-800/30;
 }

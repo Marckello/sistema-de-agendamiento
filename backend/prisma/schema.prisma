@@ -659,3 +659,94 @@ model AuditLog {
   @@index([action, entity])
   @@map("audit_logs")
 }
+
+// =============================================
+// WHATSAPP INTEGRATION
+// =============================================
+
+model WhatsAppSession {
+  id        String @id @default(uuid())
+  tenantId  String @unique
+  
+  // Estado de la sesión
+  status      WhatsAppStatus @default(DISCONNECTED)
+  phone       String?        // Número conectado
+  pushName    String?        // Nombre del perfil
+  
+  // Datos de sesión (encriptados en producción)
+  sessionData Json?
+  
+  // Configuración anti-ban
+  dailyMessageCount  Int      @default(0)
+  lastMessageAt      DateTime?
+  dailyLimitReached  Boolean  @default(false)
+  
+  // Auto-connect schedule (horarios de conexión)
+  autoConnectEnabled Boolean  @default(false)
+  connectAt          String?  // "08:00" - hora de conectar
+  disconnectAt       String?  // "20:00" - hora de desconectar
+  
+  // Recordatorios
+  reminderEnabled    Boolean  @default(true)
+  reminder24hEnabled Boolean  @default(true)
+  reminder1hEnabled  Boolean  @default(true)
+  reminderMessage24h String   @default("Hola {clientName}, te recordamos tu cita de {serviceName} mañana a las {time}. 📅")
+  reminderMessage1h  String   @default("Hola {clientName}, tu cita de {serviceName} es en 1 hora ({time}). ¡Te esperamos! 🕐")
+  
+  // Respuestas automáticas
+  autoReplyEnabled Boolean  @default(false)
+  autoReplyMessage String   @default("Gracias por tu mensaje. Te responderemos pronto.")
+  
+  // Estadísticas
+  totalMessagesSent   Int @default(0)
+  totalMessagesReceived Int @default(0)
+  
+  connectedAt   DateTime?
+  disconnectedAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Logs de mensajes
+  messageLogs WhatsAppMessageLog[]
+  
+  @@map("whatsapp_sessions")
+}
+
+enum WhatsAppStatus {
+  DISCONNECTED     // No conectado
+  CONNECTING       // Generando QR
+  QR_READY         // QR listo para escanear
+  AUTHENTICATED    // Autenticado, conectando
+  CONNECTED        // Conectado y listo
+  SLEEPING         // Desconectado temporalmente (fuera de horario)
+}
+
+model WhatsAppMessageLog {
+  id        String @id @default(uuid())
+  sessionId String
+  session   WhatsAppSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  direction   MessageDirection // IN, OUT
+  phone       String
+  message     String
+  messageType String @default("text") // text, image, document
+  
+  // Para recordatorios
+  appointmentId String?
+  isReminder    Boolean @default(false)
+  
+  // Estado
+  status    String  @default("sent") // sent, delivered, read, failed
+  error     String?
+  
+  createdAt DateTime @default(now())
+  
+  @@index([sessionId, createdAt])
+  @@index([phone])
+  @@map("whatsapp_message_logs")
+}
+
+enum MessageDirection {
+  IN
+  OUT
+}
