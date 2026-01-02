@@ -1,6 +1,9 @@
 # Backend Dockerfile
 FROM node:20-alpine AS builder
 
+# Cache buster for migrations
+ARG CACHEBUST=1
+
 # Install OpenSSL for Prisma
 RUN apk add --no-cache openssl openssl-dev
 
@@ -12,7 +15,8 @@ COPY backend/package*.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy prisma folder (including migrations)
+# Copy prisma folder (including migrations) - after CACHEBUST to invalidate cache
+COPY backend/prisma ./prisma/
 COPY backend/prisma ./prisma/
 
 # Generate Prisma client
