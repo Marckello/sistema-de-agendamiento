@@ -347,6 +347,7 @@ export const createPublicAppointment = async (
         date: appointmentDate,
         startTime: startTimeStr,
         endTime: endTimeStr,
+        duration: service.duration,
         price: service.price,
         status: 'PENDING',
         notes: client.notes || null,
