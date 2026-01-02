@@ -35,6 +35,8 @@ interface UpdateAppointmentData {
 interface TimeSlot {
   time: string;
   available: boolean;
+  warning?: 'NO_EMPLOYEE_SCHEDULE' | 'OUTSIDE_BUSINESS_HOURS' | null;
+  warningMessage?: string;
 }
 
 // Calcular hora de fin basada en duración
@@ -179,7 +181,7 @@ export async function checkAvailability(
   return { available: true };
 }
 
-// Obtener slots disponibles para un día
+// Obtener slots disponibles para un día (con warnings para horarios fuera de rango)
 export async function getAvailableSlots(
   tenantId: string,
   employeeId: string,
@@ -190,8 +192,17 @@ export async function getAvailableSlots(
   const dayOfWeek = date.getDay();
   const slots: TimeSlot[] = [];
   
-  // Obtener horario de trabajo
-  const schedule = await prisma.workSchedule.findFirst({
+  // 1. Obtener horario del LOCAL (userId = null)
+  const businessSchedule = await prisma.workSchedule.findFirst({
+    where: {
+      tenantId,
+      userId: null, // Horario del negocio
+      dayOfWeek,
+    },
+  });
+  
+  // 2. Obtener horario del EMPLEADO
+  const employeeSchedule = await prisma.workSchedule.findFirst({
     where: {
       tenantId,
       userId: employeeId,
@@ -199,8 +210,53 @@ export async function getAvailableSlots(
     },
   });
   
-  if (!schedule || !schedule.isWorking) {
-    return [];
+  // Definir rango de horas a mostrar (usar horario del local, o default 08:00-20:00)
+  let displayStart = 8 * 60;  // 08:00
+  let displayEnd = 20 * 60;   // 20:00
+  let businessStart = displayStart;
+  let businessEnd = displayEnd;
+  let businessBreakStart: number | null = null;
+  let businessBreakEnd: number | null = null;
+  let isBusinessOpen = true;
+  
+  if (businessSchedule) {
+    businessStart = timeToMinutes(businessSchedule.startTime);
+    businessEnd = timeToMinutes(businessSchedule.endTime);
+    displayStart = businessStart;
+    displayEnd = businessEnd;
+    isBusinessOpen = businessSchedule.isWorking;
+    businessBreakStart = businessSchedule.breakStart ? timeToMinutes(businessSchedule.breakStart) : null;
+    businessBreakEnd = businessSchedule.breakEnd ? timeToMinutes(businessSchedule.breakEnd) : null;
+  }
+  
+  // Si el negocio está cerrado ese día, mostrar slots con warning
+  if (!isBusinessOpen) {
+    // Mostrar algunos slots con warning de fuera de horario
+    for (let minutes = 9 * 60; minutes <= 18 * 60; minutes += interval) {
+      const time = `${Math.floor(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}`;
+      slots.push({
+        time,
+        available: true,
+        warning: 'OUTSIDE_BUSINESS_HOURS',
+        warningMessage: 'El negocio está cerrado este día'
+      });
+    }
+    return slots;
+  }
+  
+  // Horario del empleado
+  let employeeStart: number | null = null;
+  let employeeEnd: number | null = null;
+  let employeeBreakStart: number | null = null;
+  let employeeBreakEnd: number | null = null;
+  let hasEmployeeSchedule = false;
+  
+  if (employeeSchedule && employeeSchedule.isWorking) {
+    hasEmployeeSchedule = true;
+    employeeStart = timeToMinutes(employeeSchedule.startTime);
+    employeeEnd = timeToMinutes(employeeSchedule.endTime);
+    employeeBreakStart = employeeSchedule.breakStart ? timeToMinutes(employeeSchedule.breakStart) : null;
+    employeeBreakEnd = employeeSchedule.breakEnd ? timeToMinutes(employeeSchedule.breakEnd) : null;
   }
   
   // Obtener citas existentes del día
@@ -218,26 +274,26 @@ export async function getAvailableSlots(
     orderBy: { startTime: 'asc' },
   });
   
-  // Generar todos los slots posibles
-  const scheduleStart = timeToMinutes(schedule.startTime);
-  const scheduleEnd = timeToMinutes(schedule.endTime);
-  const breakStart = schedule.breakStart ? timeToMinutes(schedule.breakStart) : null;
-  const breakEnd = schedule.breakEnd ? timeToMinutes(schedule.breakEnd) : null;
-  
-  for (let minutes = scheduleStart; minutes + serviceDuration <= scheduleEnd; minutes += interval) {
+  // Generar todos los slots en el rango del negocio
+  for (let minutes = displayStart; minutes + serviceDuration <= displayEnd; minutes += interval) {
     const time = `${Math.floor(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}`;
     const slotEnd = minutes + serviceDuration;
     
-    // Verificar si está en descanso
-    if (breakStart && breakEnd) {
+    // Verificar si está en descanso del negocio
+    let inBusinessBreak = false;
+    if (businessBreakStart && businessBreakEnd) {
       if (
-        (minutes >= breakStart && minutes < breakEnd) ||
-        (slotEnd > breakStart && slotEnd <= breakEnd) ||
-        (minutes <= breakStart && slotEnd >= breakEnd)
+        (minutes >= businessBreakStart && minutes < businessBreakEnd) ||
+        (slotEnd > businessBreakStart && slotEnd <= businessBreakEnd) ||
+        (minutes <= businessBreakStart && slotEnd >= businessBreakEnd)
       ) {
-        slots.push({ time, available: false });
-        continue;
+        inBusinessBreak = true;
       }
+    }
+    
+    if (inBusinessBreak) {
+      slots.push({ time, available: false });
+      continue;
     }
     
     // Verificar si hay conflicto con citas existentes
@@ -256,8 +312,79 @@ export async function getAvailableSlots(
       }
     }
     
-    slots.push({ time, available: !hasConflict });
+    if (hasConflict) {
+      slots.push({ time, available: false });
+      continue;
+    }
+    
+    // Verificar si el empleado tiene horario asignado para este slot
+    if (!hasEmployeeSchedule) {
+      // Empleado sin horario configurado para este día
+      slots.push({
+        time,
+        available: true,
+        warning: 'NO_EMPLOYEE_SCHEDULE',
+        warningMessage: 'El empleado no tiene horario asignado para este día'
+      });
+      continue;
+    }
+    
+    // Verificar si el slot está dentro del horario del empleado
+    const isInEmployeeHours = employeeStart !== null && employeeEnd !== null &&
+      minutes >= employeeStart && slotEnd <= employeeEnd;
+    
+    // Verificar descanso del empleado
+    let inEmployeeBreak = false;
+    if (employeeBreakStart && employeeBreakEnd) {
+      if (
+        (minutes >= employeeBreakStart && minutes < employeeBreakEnd) ||
+        (slotEnd > employeeBreakStart && slotEnd <= employeeBreakEnd) ||
+        (minutes <= employeeBreakStart && slotEnd >= employeeBreakEnd)
+      ) {
+        inEmployeeBreak = true;
+      }
+    }
+    
+    if (!isInEmployeeHours || inEmployeeBreak) {
+      // Fuera del horario del empleado pero dentro del horario del negocio
+      slots.push({
+        time,
+        available: true,
+        warning: 'NO_EMPLOYEE_SCHEDULE',
+        warningMessage: 'El empleado no está disponible en este horario'
+      });
+      continue;
+    }
+    
+    // Slot disponible sin advertencias
+    slots.push({ time, available: true });
   }
+  
+  // Agregar slots fuera del horario del negocio (antes y después)
+  // Slots antes del horario comercial
+  for (let minutes = 7 * 60; minutes < businessStart && minutes + serviceDuration <= 23 * 60; minutes += interval) {
+    const time = `${Math.floor(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}`;
+    slots.unshift({
+      time,
+      available: true,
+      warning: 'OUTSIDE_BUSINESS_HOURS',
+      warningMessage: 'Fuera del horario comercial'
+    });
+  }
+  
+  // Slots después del horario comercial
+  for (let minutes = businessEnd; minutes + serviceDuration <= 22 * 60; minutes += interval) {
+    const time = `${Math.floor(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}`;
+    slots.push({
+      time,
+      available: true,
+      warning: 'OUTSIDE_BUSINESS_HOURS',
+      warningMessage: 'Fuera del horario comercial'
+    });
+  }
+  
+  // Ordenar slots por hora
+  slots.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
   
   return slots;
 }

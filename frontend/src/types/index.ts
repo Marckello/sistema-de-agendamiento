@@ -223,6 +223,8 @@ export interface CalendarEvent {
 export interface TimeSlot {
   time: string;
   available: boolean;
+  warning?: 'NO_EMPLOYEE_SCHEDULE' | 'OUTSIDE_BUSINESS_HOURS' | null;
+  warningMessage?: string;
 }
 
 // Dashboard types

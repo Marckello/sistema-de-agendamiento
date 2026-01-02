@@ -511,6 +511,24 @@ gender: z.string().optional().transform(val => val?.toLowerCase()),
 - Creado componente `CategoryModal` con formulario (nombre, descripción, color)
 - Integrado con `serviceService.createCategory()`
 
+### 8. Sistema de horarios inflexible
+**Problema**: Los slots de hora solo aparecían si el empleado tenía horario configurado. No permitía agendar fuera de horario comercial o sin horario de empleado.
+
+**Solución**: Sistema de horarios con warnings:
+- **Horario del local** (`WorkSchedule` con `userId = null`): Define horario comercial general
+- **Horario del empleado** (`WorkSchedule` con `userId = [id]`): Define horario específico
+
+**Lógica de slots** (en `appointment.service.ts`):
+- ✅ Dentro horario local + empleado disponible → Slot verde normal
+- ⚠️ Dentro horario local + empleado sin horario → Slot amarillo con warning "El empleado no tiene horario asignado"
+- ⚠️ Fuera horario local → Slot amarillo con warning "Fuera del horario comercial"
+
+**Frontend** (`AppointmentModal.tsx`):
+- Slots con warning muestran icono ⚠️ y fondo amarillo
+- Al hacer clic en slot con warning, aparece modal de confirmación
+- Si el usuario acepta, la cita se crea de todas formas
+- Leyenda de colores (Disponible / Con advertencia)
+
 ---
 
 ## 📊 Estado Actual del Desarrollo
