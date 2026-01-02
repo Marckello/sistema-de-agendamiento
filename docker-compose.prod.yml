@@ -26,8 +26,8 @@ services:
   # Backend API
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile.easypanel
     restart: always
     environment:
       NODE_ENV: production
@@ -35,6 +35,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-appointments}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-appointments}?schema=public
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER}
@@ -42,6 +43,11 @@ services:
       SMTP_FROM: ${SMTP_FROM}
       APP_URL: ${APP_URL}
       CORS_ORIGINS: ${CORS_ORIGINS}
+      # WhatsApp Puppeteer config
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: "true"
+    volumes:
+      - whatsapp_sessions:/app/.wwebjs_auth
     depends_on:
       postgres:
         condition: service_healthy
@@ -58,8 +64,8 @@ services:
   # Frontend
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: frontend/Dockerfile.easypanel
       args:
         VITE_API_URL: https://api.${DOMAIN}/api
     restart: always
@@ -74,6 +80,7 @@ services:
 
 volumes:
   postgres_data:
+  whatsapp_sessions:
 
 networks:
   internal:
