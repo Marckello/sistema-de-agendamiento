@@ -211,22 +211,47 @@ export const getService = asyncHandler(async (req: Request, res: Response) => {
 
 // Crear servicio
 export const create = asyncHandler(async (req: Request, res: Response) => {
-  console.log('📦 Service create body:', JSON.stringify(req.body, null, 2));
+  console.log('');
+  console.log('='.repeat(80));
+  console.log('🚀 [SERVICE CREATE] Iniciando creación de servicio');
+  console.log('='.repeat(80));
+  console.log('📅 Timestamp:', new Date().toISOString());
+  console.log('👤 Tenant ID:', req.tenant?.id);
+  console.log('📦 Request Body:');
+  console.log(JSON.stringify(req.body, null, 2));
+  console.log('-'.repeat(80));
   
   const parseResult = createServiceSchema.safeParse(req.body);
+  
   if (!parseResult.success) {
-    console.error('❌ Zod validation errors:', JSON.stringify(parseResult.error.errors, null, 2));
+    console.log('');
+    console.log('❌❌❌ [SERVICE CREATE] VALIDACIÓN FALLIDA ❌❌❌');
+    console.log('-'.repeat(80));
+    parseResult.error.errors.forEach((err, index) => {
+      console.log(`Error ${index + 1}:`);
+      console.log(`  Campo: ${err.path.join('.')}`);
+      console.log(`  Código: ${err.code}`);
+      console.log(`  Mensaje: ${err.message}`);
+      console.log(`  Valor recibido: ${JSON.stringify((req.body as any)[err.path[0]])}`);
+    });
+    console.log('='.repeat(80));
+    console.log('');
+    
     return res.status(400).json({
       success: false,
-      message: 'Error de validación',
+      message: 'Error de validación: ' + parseResult.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
       errors: parseResult.error.errors.map(e => ({
         field: e.path.join('.'),
         message: e.message,
+        code: e.code,
       })),
     });
   }
   
+  console.log('✅ [SERVICE CREATE] Validación exitosa');
   const data = parseResult.data;
+  console.log('📤 Datos parseados:', JSON.stringify(data, null, 2));
+  
   const { employeeIds, schedules, bufferTime, requiresConfirmation, ...serviceData } = data;
   
   const service = await prisma.service.create({
