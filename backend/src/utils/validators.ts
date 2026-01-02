@@ -107,9 +107,9 @@ export const createServiceCategorySchema = z.object({
 });
 
 export const createServiceSchema = z.object({
-  categoryId: z.string().uuid().optional().nullable(),
+  categoryId: z.string().uuid().optional(),
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  description: z.string().optional().nullable(),
+  description: z.string().optional(),
   duration: z.coerce.number().min(5, 'La duración mínima es 5 minutos').max(480, 'La duración máxima es 8 horas'),
   bufferBefore: z.coerce.number().min(0).optional(),
   bufferAfter: z.coerce.number().min(0).optional(),
@@ -123,8 +123,8 @@ export const createServiceSchema = z.object({
   isActive: z.boolean().optional(),
   requiresConfirm: z.boolean().optional(),
   requiresConfirmation: z.boolean().optional(),
-  color: z.string().optional().nullable(),
-  image: z.string().optional().nullable(),
+  color: z.string().optional(),
+  image: z.string().optional(),
   sortOrder: z.coerce.number().optional(),
   maxAdvanceBooking: z.coerce.number().min(1).optional(),
   minAdvanceBooking: z.coerce.number().min(0).optional(),
