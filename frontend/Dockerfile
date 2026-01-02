@@ -35,9 +35,9 @@ RUN chown -R nginx:nginx /usr/share/nginx/html
 # Expose port
 EXPOSE 80
 
-# Health check
+# Health check using curl (available in nginx:alpine)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:80 || exit 1
+  CMD curl -f http://localhost:80/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
