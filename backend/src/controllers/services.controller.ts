@@ -211,7 +211,22 @@ export const getService = asyncHandler(async (req: Request, res: Response) => {
 
 // Crear servicio
 export const create = asyncHandler(async (req: Request, res: Response) => {
-  const data = createServiceSchema.parse(req.body);
+  console.log('📦 Service create body:', JSON.stringify(req.body, null, 2));
+  
+  const parseResult = createServiceSchema.safeParse(req.body);
+  if (!parseResult.success) {
+    console.error('❌ Zod validation errors:', JSON.stringify(parseResult.error.errors, null, 2));
+    return res.status(400).json({
+      success: false,
+      message: 'Error de validación',
+      errors: parseResult.error.errors.map(e => ({
+        field: e.path.join('.'),
+        message: e.message,
+      })),
+    });
+  }
+  
+  const data = parseResult.data;
   const { employeeIds, schedules, bufferTime, requiresConfirmation, ...serviceData } = data;
   
   const service = await prisma.service.create({
