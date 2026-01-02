@@ -31,7 +31,7 @@ export default function UsersPage() {
     queryFn: () => userService.getAll(true),
   });
 
-  const users = usersData?.data || [];
+  const users = usersData?.data?.users || [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => userService.delete(id),

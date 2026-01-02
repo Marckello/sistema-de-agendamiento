@@ -35,8 +35,8 @@ export default function ClientsPage() {
     queryFn: () => clientService.getAll(filters),
   });
 
-  const clients = data?.data || [];
-  const pagination = data?.pagination;
+  const clients = data?.data?.clients || [];
+  const pagination = data?.data?.pagination;
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => clientService.delete(id),
@@ -246,7 +246,7 @@ export default function ClientsPage() {
         </div>
 
         {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
+        {pagination && pagination.pages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Mostrando {((pagination.page - 1) * pagination.limit) + 1} a{' '}
@@ -262,7 +262,7 @@ export default function ClientsPage() {
               </button>
               <button
                 onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
-                disabled={pagination.page >= pagination.totalPages}
+                disabled={pagination.page >= pagination.pages}
                 className="btn-secondary btn-sm"
               >
                 Siguiente

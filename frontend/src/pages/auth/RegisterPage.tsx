@@ -18,12 +18,14 @@ interface RegisterFormData {
 export default function RegisterPage() {
   const { register: registerUser } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<RegisterFormData>();
 
@@ -161,10 +163,7 @@ export default function RegisterPage() {
               required: 'El nombre del negocio es requerido',
               onChange: (e) => {
                 const subdomain = generateSubdomain(e.target.value);
-                const subdomainInput = document.getElementById('tenantSubdomain') as HTMLInputElement;
-                if (subdomainInput && !subdomainInput.dataset.manual) {
-                  subdomainInput.value = subdomain;
-                }
+                setValue('tenantSubdomain', subdomain, { shouldValidate: true });
               },
             })}
             className={`input ${errors.tenantName ? 'input-error' : ''}`}
@@ -196,14 +195,11 @@ export default function RegisterPage() {
                   message: 'Mínimo 3 caracteres',
                 },
               })}
-              onChange={(e) => {
-                e.target.dataset.manual = 'true';
-              }}
               className={`input rounded-r-none ${errors.tenantSubdomain ? 'input-error' : ''}`}
               placeholder="miclinica"
             />
             <span className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm rounded-r-md">
-              .tudominio.com
+              .serrano.marketing
             </span>
           </div>
           {errors.tenantSubdomain && (
@@ -221,6 +217,7 @@ export default function RegisterPage() {
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
               {...register('password', {
                 required: 'La contraseña es requerida',
                 minLength: {
@@ -258,17 +255,31 @@ export default function RegisterPage() {
           <label htmlFor="confirmPassword" className="label">
             Confirmar contraseña
           </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            {...register('confirmPassword', {
-              required: 'Confirma tu contraseña',
-              validate: (value) =>
-                value === password || 'Las contraseñas no coinciden',
-            })}
-            className={`input ${errors.confirmPassword ? 'input-error' : ''}`}
-            placeholder="••••••••"
-          />
+          <div className="relative">
+            <input
+              id="confirmPassword"
+              type={showConfirmPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              {...register('confirmPassword', {
+                required: 'Confirma tu contraseña',
+                validate: (value) =>
+                  value === password || 'Las contraseñas no coinciden',
+              })}
+              className={`input pr-10 ${errors.confirmPassword ? 'input-error' : ''}`}
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
+            >
+              {showConfirmPassword ? (
+                <EyeSlashIcon className="w-5 h-5" />
+              ) : (
+                <EyeIcon className="w-5 h-5" />
+              )}
+            </button>
+          </div>
           {errors.confirmPassword && (
             <p className="mt-1 text-sm text-red-600 dark:text-red-400">
               {errors.confirmPassword.message}

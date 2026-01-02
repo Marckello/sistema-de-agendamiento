@@ -9,6 +9,7 @@ import {
   XMarkIcon,
   BuildingStorefrontIcon,
   UserGroupIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -39,36 +40,39 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     <>
       {/* Mobile sidebar */}
       <div
-        className={`fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-30 w-72 bg-dark-950/95 backdrop-blur-xl border-r border-dark-800/50 shadow-2xl transform transition-transform duration-300 ease-out lg:hidden ${
           open ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200 dark:border-gray-700">
-          <h1 className="text-xl font-bold text-primary-600 dark:text-primary-400">
-            Serrano Marketing
-          </h1>
+        <div className="flex items-center justify-between h-16 px-5 border-b border-dark-800/50">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
+              <SparklesIcon className="w-5 h-5 text-white" />
+            </div>
+            <span className="text-lg font-bold gradient-text">CitasPro</span>
+          </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-md text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300"
+            className="p-2 rounded-xl text-gray-400 hover:text-white hover:bg-dark-800 transition-colors"
           >
-            <XMarkIcon className="w-6 h-6" />
+            <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
-        <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-6 space-y-1 overflow-y-auto">
           {filteredNavigation.map((item) => (
             <NavLink
               key={item.name}
               to={item.href}
               onClick={onClose}
               className={({ isActive }) =>
-                `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 ${
                   isActive
-                    ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400'
-                    : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                    ? 'bg-primary-500/10 text-primary-400 border-l-2 border-primary-500'
+                    : 'text-gray-400 hover:text-white hover:bg-dark-800/60'
                 }`
               }
             >
-              <item.icon className="w-5 h-5 mr-3" />
+              <item.icon className="w-5 h-5" />
               {item.name}
             </NavLink>
           ))}
@@ -76,17 +80,26 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       </div>
 
       {/* Desktop sidebar */}
-      <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-1 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+      <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-72 lg:flex-col">
+        <div className="flex flex-col flex-1 bg-dark-950 border-r border-dark-800">
           {/* Logo */}
-          <div className="flex items-center h-16 px-6 border-b border-gray-200 dark:border-gray-700">
-            <h1 className="text-xl font-bold text-primary-600 dark:text-primary-400">
-              Serrano Marketing
-            </h1>
+          <div className="flex items-center h-16 px-6 border-b border-dark-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center">
+                <SparklesIcon className="w-6 h-6 text-dark-950" />
+              </div>
+              <div>
+                <span className="text-xl font-bold text-white">CitasPro</span>
+                <p className="text-[10px] text-gray-600 -mt-0.5">by Serrano Marketing</p>
+              </div>
+            </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+            <p className="px-4 mb-3 text-[10px] font-semibold text-gray-600 uppercase tracking-wider">
+              Menú principal
+            </p>
             {filteredNavigation.map((item) => {
               const isActive = location.pathname === item.href || 
                 (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
@@ -95,14 +108,17 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 <NavLink
                   key={item.name}
                   to={item.href}
-                  className={`flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors ${
+                  className={`flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 group ${
                     isActive
-                      ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400'
-                      : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
+                      ? 'bg-primary-500/10 text-primary-400'
+                      : 'text-gray-400 hover:text-white hover:bg-dark-800'
                   }`}
                 >
-                  <item.icon className="w-5 h-5 mr-3" />
+                  <item.icon className={`w-5 h-5 transition-colors ${isActive ? 'text-primary-400' : 'text-gray-500 group-hover:text-gray-300'}`} />
                   {item.name}
+                  {isActive && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary-400" />
+                  )}
                 </NavLink>
               );
             })}
@@ -110,32 +126,33 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
 
           {/* User info */}
           {user && (
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex items-center">
+            <div className="p-4 m-4 rounded-2xl bg-dark-800 border border-dark-700">
+              <div className="flex items-center gap-3">
                 <div className="flex-shrink-0">
                   {user.avatar ? (
                     <img
                       src={user.avatar}
                       alt={user.firstName}
-                      className="w-10 h-10 rounded-full object-cover"
+                      className="w-11 h-11 rounded-xl object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
-                      <span className="text-primary-600 dark:text-primary-400 font-medium">
+                    <div className="w-11 h-11 rounded-xl bg-primary-500 flex items-center justify-center">
+                      <span className="text-dark-950 font-semibold">
                         {user.firstName[0]}{user.lastName[0]}
                       </span>
                     </div>
                   )}
                 </div>
-                <div className="ml-3 min-w-0 flex-1">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-white truncate">
                     {user.firstName} {user.lastName}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-xs text-gray-500 truncate">
                     {user.role === 'SUPER_ADMIN' ? 'Super Admin' : 
                      user.role === 'ADMIN' ? 'Administrador' : 'Empleado'}
                   </p>
                 </div>
+                <div className="w-2 h-2 rounded-full bg-primary-400" />
               </div>
             </div>
           )}

@@ -159,13 +159,14 @@ export interface CreateServiceData {
 export type AppointmentStatus = 
   | 'PENDING' 
   | 'CONFIRMED' 
-  | 'CANCELLED' 
+  | 'CANCELED' 
   | 'COMPLETED' 
   | 'NO_SHOW' 
   | 'RESCHEDULED';
 
 export interface Appointment {
   id: string;
+  date: string;
   startTime: string;
   endTime: string;
   status: AppointmentStatus;
@@ -327,14 +328,41 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
 export interface PaginatedResponse<T> {
   success: boolean;
   data: T[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
+  pagination: Pagination;
+}
+
+// Respuestas paginadas específicas del API
+export interface UsersApiResponse {
+  success: boolean;
+  data: {
+    users: User[];
+    pagination: Pagination;
+  };
+}
+
+export interface ClientsApiResponse {
+  success: boolean;
+  data: {
+    clients: Client[];
+    pagination: Pagination;
+  };
+}
+
+export interface AppointmentsApiResponse {
+  success: boolean;
+  data: {
+    appointments: Appointment[];
+    pagination: Pagination;
   };
 }
 

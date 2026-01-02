@@ -2,15 +2,13 @@ import { Fragment, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, Transition } from '@headlessui/react';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';
 import {
   Bars3Icon,
   BellIcon,
-  SunIcon,
-  MoonIcon,
   UserCircleIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
 interface NavbarProps {
@@ -19,74 +17,77 @@ interface NavbarProps {
 
 export default function Navbar({ onMenuClick }: NavbarProps) {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
   const [notifications] = useState<any[]>([]);
 
   return (
-    <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm">
+    <header className="sticky top-0 z-20 bg-dark-950 border-b border-dark-800">
       <div className="flex items-center justify-between h-16 px-4 sm:px-6">
         {/* Left side */}
-        <div className="flex items-center">
+        <div className="flex items-center gap-4">
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2 rounded-md text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            className="lg:hidden p-2 rounded-xl text-gray-400 hover:text-white hover:bg-dark-800 transition-colors"
           >
             <Bars3Icon className="w-6 h-6" />
           </button>
+          
+          {/* Search bar */}
+          <div className="hidden sm:flex items-center">
+            <div className="relative">
+              <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Buscar..."
+                className="w-64 pl-10 pr-4 py-2 bg-dark-900 border border-dark-800 rounded-xl text-sm text-gray-300 placeholder-gray-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500/20 transition-all"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Right side */}
-        <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            aria-label="Cambiar tema"
-          >
-            {theme === 'dark' ? (
-              <SunIcon className="w-5 h-5" />
-            ) : (
-              <MoonIcon className="w-5 h-5" />
-            )}
-          </button>
-
+        <div className="flex items-center gap-2">
           {/* Notifications */}
           <Menu as="div" className="relative">
-            <Menu.Button className="relative p-2 rounded-lg text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <Menu.Button className="relative p-2.5 rounded-xl text-gray-400 hover:text-white hover:bg-dark-800 transition-colors">
               <BellIcon className="w-5 h-5" />
               {notifications.length > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
+                <span className="absolute top-2 right-2 w-2 h-2 bg-primary-500 rounded-full shadow-glow" />
               )}
             </Menu.Button>
             <Transition
               as={Fragment}
-              enter="transition ease-out duration-100"
-              enterFrom="transform opacity-0 scale-95"
-              enterTo="transform opacity-100 scale-100"
-              leave="transition ease-in duration-75"
+              enter="transition ease-out duration-200"
+              enterFrom="transform opacity-0 scale-95 translate-y-2"
+              enterTo="transform opacity-100 scale-100 translate-y-0"
+              leave="transition ease-in duration-150"
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
             >
-              <Menu.Items className="absolute right-0 mt-2 w-80 origin-top-right bg-white dark:bg-gray-800 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                <div className="p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              <Menu.Items className="absolute right-0 mt-2 w-80 origin-top-right bg-dark-900 border border-dark-800 rounded-2xl shadow-card focus:outline-none overflow-hidden">
+                <div className="p-4 border-b border-dark-800">
+                  <h3 className="text-sm font-semibold text-white">
                     Notificaciones
                   </h3>
+                </div>
+                <div className="p-4">
                   {notifications.length === 0 ? (
-                    <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                      No tienes notificaciones nuevas
-                    </p>
+                    <div className="text-center py-6">
+                      <BellIcon className="w-10 h-10 text-gray-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">
+                        No tienes notificaciones nuevas
+                      </p>
+                    </div>
                   ) : (
-                    <div className="mt-2 space-y-2">
+                    <div className="space-y-2">
                       {notifications.map((notification, index) => (
                         <div
                           key={index}
-                          className="p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700"
+                          className="p-3 rounded-xl hover:bg-dark-800 transition-colors cursor-pointer"
                         >
-                          <p className="text-sm text-gray-900 dark:text-gray-100">
+                          <p className="text-sm text-gray-300">
                             {notification.message}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                          <p className="text-xs text-gray-500 mt-1">
                             {notification.time}
                           </p>
                         </div>
@@ -100,54 +101,60 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
 
           {/* User menu */}
           <Menu as="div" className="relative">
-            <Menu.Button className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+            <Menu.Button className="flex items-center gap-3 p-1.5 pr-3 rounded-xl hover:bg-dark-800 transition-colors">
               {user?.avatar ? (
                 <img
                   src={user.avatar}
                   alt={user.firstName}
-                  className="w-8 h-8 rounded-full object-cover"
+                  className="w-9 h-9 rounded-xl object-cover ring-2 ring-primary-500/30"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
-                  <span className="text-primary-600 dark:text-primary-400 text-sm font-medium">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
+                  <span className="text-white text-sm font-semibold">
                     {user?.firstName?.[0]}{user?.lastName?.[0]}
                   </span>
                 </div>
               )}
-              <span className="hidden sm:block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {user?.firstName}
-              </span>
+              <div className="hidden sm:block text-left">
+                <p className="text-sm font-medium text-white">
+                  {user?.firstName}
+                </p>
+                <p className="text-[10px] text-gray-500">
+                  {user?.role === 'SUPER_ADMIN' ? 'Super Admin' : 
+                   user?.role === 'ADMIN' ? 'Admin' : 'Empleado'}
+                </p>
+              </div>
             </Menu.Button>
             <Transition
               as={Fragment}
-              enter="transition ease-out duration-100"
-              enterFrom="transform opacity-0 scale-95"
-              enterTo="transform opacity-100 scale-100"
-              leave="transition ease-in duration-75"
+              enter="transition ease-out duration-200"
+              enterFrom="transform opacity-0 scale-95 translate-y-2"
+              enterTo="transform opacity-100 scale-100 translate-y-0"
+              leave="transition ease-in duration-150"
               leaveFrom="transform opacity-100 scale-100"
               leaveTo="transform opacity-0 scale-95"
             >
-              <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right bg-white dark:bg-gray-800 rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none divide-y divide-gray-100 dark:divide-gray-700">
-                <div className="px-4 py-3">
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              <Menu.Items className="absolute right-0 mt-2 w-56 origin-top-right bg-dark-900 border border-dark-800 rounded-2xl shadow-card focus:outline-none overflow-hidden">
+                <div className="px-4 py-3 border-b border-dark-800">
+                  <p className="text-sm font-semibold text-white">
                     {user?.firstName} {user?.lastName}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                  <p className="text-xs text-gray-500 truncate">
                     {user?.email}
                   </p>
                 </div>
-                <div className="py-1">
+                <div className="p-2">
                   <Menu.Item>
                     {({ active }) => (
                       <Link
                         to="/profile"
-                        className={`flex items-center px-4 py-2 text-sm ${
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-colors ${
                           active
-                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                            : 'text-gray-700 dark:text-gray-300'
+                            ? 'bg-dark-800 text-white'
+                            : 'text-gray-400'
                         }`}
                       >
-                        <UserCircleIcon className="w-5 h-5 mr-3" />
+                        <UserCircleIcon className="w-5 h-5" />
                         Mi Perfil
                       </Link>
                     )}
@@ -156,30 +163,30 @@ export default function Navbar({ onMenuClick }: NavbarProps) {
                     {({ active }) => (
                       <Link
                         to="/settings"
-                        className={`flex items-center px-4 py-2 text-sm ${
+                        className={`flex items-center gap-3 px-3 py-2.5 text-sm rounded-xl transition-colors ${
                           active
-                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
-                            : 'text-gray-700 dark:text-gray-300'
+                            ? 'bg-dark-800 text-white'
+                            : 'text-gray-400'
                         }`}
                       >
-                        <Cog6ToothIcon className="w-5 h-5 mr-3" />
+                        <Cog6ToothIcon className="w-5 h-5" />
                         Configuración
                       </Link>
                     )}
                   </Menu.Item>
                 </div>
-                <div className="py-1">
+                <div className="p-2 border-t border-dark-800">
                   <Menu.Item>
                     {({ active }) => (
                       <button
                         onClick={logout}
-                        className={`flex items-center w-full px-4 py-2 text-sm ${
+                        className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl transition-colors ${
                           active
-                            ? 'bg-gray-100 dark:bg-gray-700 text-red-600 dark:text-red-400'
-                            : 'text-red-600 dark:text-red-400'
+                            ? 'bg-red-500/10 text-red-400'
+                            : 'text-red-400/80'
                         }`}
                       >
-                        <ArrowRightOnRectangleIcon className="w-5 h-5 mr-3" />
+                        <ArrowRightOnRectangleIcon className="w-5 h-5" />
                         Cerrar Sesión
                       </button>
                     )}

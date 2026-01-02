@@ -61,8 +61,8 @@ export const createClientSchema = z.object({
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   phone: z.string().min(8, 'Teléfono inválido'),
   phoneAlt: z.string().optional(),
-  dateOfBirth: z.string().datetime().optional().or(z.literal('')),
-  gender: z.enum(['male', 'female', 'other', 'prefer_not_say']).optional(),
+  dateOfBirth: z.string().optional().or(z.literal('')),
+  gender: z.string().optional().transform(val => val?.toLowerCase()),
   idType: z.string().optional(),
   idNumber: z.string().optional(),
   address: z.string().optional(),
@@ -223,8 +223,8 @@ export const paginationSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
-// Date range schema
+// Date range schema - accepts both date-only and full ISO formats
 export const dateRangeSchema = z.object({
-  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  startDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Fecha de inicio inválida' }),
+  endDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Fecha de fin inválida' }),
 });

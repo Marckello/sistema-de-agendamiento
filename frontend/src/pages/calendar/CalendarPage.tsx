@@ -64,12 +64,12 @@ export default function CalendarPage() {
 
   // Transform appointments to calendar events
   const events: CalendarEvent[] = useMemo(() => {
-    if (!appointmentsData) return [];
+    if (!appointmentsData || !Array.isArray(appointmentsData)) return [];
     return appointmentsData.map((appointment: Appointment) => ({
       id: appointment.id,
-      title: `${appointment.client?.firstName} ${appointment.client?.lastName} - ${appointment.service?.name}`,
-      start: new Date(appointment.startTime),
-      end: new Date(appointment.endTime),
+      title: `${appointment.client?.firstName || ''} ${appointment.client?.lastName || ''} - ${appointment.service?.name || ''}`,
+      start: new Date(`${appointment.date}T${appointment.startTime}`),
+      end: new Date(`${appointment.date}T${appointment.endTime}`),
       resource: appointment,
     }));
   }, [appointmentsData]);
@@ -111,7 +111,7 @@ export default function CalendarPage() {
       case 'COMPLETED':
         backgroundColor = '#10B981'; // Green
         break;
-      case 'CANCELLED':
+      case 'CANCELED':
         backgroundColor = '#EF4444'; // Red
         break;
       case 'NO_SHOW':

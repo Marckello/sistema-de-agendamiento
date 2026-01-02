@@ -29,7 +29,8 @@ export default function ClientDetailPage() {
   });
 
   const client = data?.data;
-  const appointments = appointmentsData?.data || [];
+  // appointmentsData.data is { appointments: [], pagination: {} }
+  const appointments = appointmentsData?.data?.appointments || [];
 
   if (isLoading) {
     return (
@@ -141,7 +142,7 @@ export default function ClientDetailPage() {
                           {appointment.service?.name}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {format(new Date(appointment.startTime), "d 'de' MMMM yyyy 'a las' HH:mm", { locale: es })}
+                          {appointment.date ? format(new Date(appointment.date), "d 'de' MMMM yyyy", { locale: es }) : ''} a las {appointment.startTime}
                         </p>
                       </div>
                     </div>
@@ -151,11 +152,11 @@ export default function ClientDetailPage() {
                       </p>
                       <span className={`text-sm ${
                         appointment.status === 'COMPLETED' ? 'text-green-600' :
-                        appointment.status === 'CANCELLED' ? 'text-red-600' :
+                        appointment.status === 'CANCELED' ? 'text-red-600' :
                         'text-yellow-600'
                       }`}>
                         {appointment.status === 'COMPLETED' ? 'Completada' :
-                         appointment.status === 'CANCELLED' ? 'Cancelada' :
+                         appointment.status === 'CANCELED' ? 'Cancelada' :
                          appointment.status === 'PENDING' ? 'Pendiente' :
                          appointment.status}
                       </span>

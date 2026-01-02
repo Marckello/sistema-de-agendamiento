@@ -6,12 +6,12 @@ import {
   AppointmentFilters,
   TimeSlot,
   ApiResponse,
-  PaginatedResponse
+  AppointmentsApiResponse
 } from '@/types';
 
 export const appointmentService = {
   // Get all appointments with filters
-  getAll: async (filters?: AppointmentFilters): Promise<PaginatedResponse<Appointment>> => {
+  getAll: async (filters?: AppointmentFilters): Promise<AppointmentsApiResponse> => {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
     if (filters?.employeeId) params.append('employeeId', filters.employeeId);
@@ -100,7 +100,9 @@ export const appointmentService = {
     if (employeeId) params.append('employeeId', employeeId);
     
     const response = await api.get(`/appointments?${params.toString()}`);
-    return response.data.data;
+    // API returns { success: true, data: { appointments: [...], pagination: {} } }
+    const data = response.data?.data;
+    return data?.appointments || [];
   },
 
   // Get today's appointments

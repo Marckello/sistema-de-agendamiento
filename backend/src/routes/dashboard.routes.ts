@@ -12,5 +12,9 @@ router.get('/', dashboardController.getDashboard);
 router.get('/stats', dashboardController.getDetailedStats);
 router.get('/top-clients', dashboardController.getTopClients);
 router.get('/activity', dashboardController.getRecentActivity);
+router.get('/appointments-by-status', dashboardController.getAppointmentsByStatus);
+router.get('/appointments-by-day', dashboardController.getAppointmentsByDay);
+router.get('/top-services', dashboardController.getTopServices);
+router.get('/top-employees', dashboardController.getTopEmployees);
 
 export default router;

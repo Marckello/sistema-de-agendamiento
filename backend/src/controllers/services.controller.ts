@@ -276,6 +276,30 @@ export const update = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+// Toggle active status
+export const toggleActive = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  
+  const existing = await prisma.service.findFirst({
+    where: { id, tenantId: req.tenant!.id },
+  });
+  
+  if (!existing) {
+    throw new NotFoundError('Servicio');
+  }
+  
+  const service = await prisma.service.update({
+    where: { id },
+    data: { isActive: !existing.isActive },
+  });
+  
+  res.json({
+    success: true,
+    message: service.isActive ? 'Servicio activado' : 'Servicio desactivado',
+    data: service,
+  });
+});
+
 // Eliminar servicio
 export const remove = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;

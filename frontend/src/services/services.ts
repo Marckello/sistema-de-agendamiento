@@ -39,7 +39,7 @@ export const serviceService = {
 
   // Toggle service active status
   toggleActive: async (id: string): Promise<ApiResponse<Service>> => {
-    const response = await api.post(`/services/${id}/toggle-active`);
+    const response = await api.patch(`/services/${id}/toggle-active`);
     return response.data;
   },
 

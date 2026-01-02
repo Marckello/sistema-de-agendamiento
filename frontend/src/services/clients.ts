@@ -4,12 +4,12 @@ import {
   CreateClientData, 
   ClientFilters,
   ApiResponse,
-  PaginatedResponse
+  ClientsApiResponse
 } from '@/types';
 
 export const clientService = {
   // Get all clients with filters
-  getAll: async (filters?: ClientFilters): Promise<PaginatedResponse<Client>> => {
+  getAll: async (filters?: ClientFilters): Promise<ClientsApiResponse> => {
     const params = new URLSearchParams();
     if (filters?.search) params.append('search', filters.search);
     if (filters?.isActive !== undefined) params.append('isActive', filters.isActive.toString());
@@ -59,6 +59,11 @@ export const clientService = {
   // Search clients
   search: async (query: string, limit: number = 10): Promise<ApiResponse<Client[]>> => {
     const response = await api.get(`/clients?search=${encodeURIComponent(query)}&limit=${limit}`);
+    // Handle { clients: [], pagination: {} } response format
+    const data = response.data?.data;
+    if (data?.clients) {
+      return { ...response.data, data: data.clients };
+    }
     return response.data;
   },
 

@@ -9,6 +9,7 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   ChevronRightIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import {
   AreaChart,
@@ -29,13 +30,13 @@ import { es } from 'date-fns/locale';
 import { dashboardService } from '@/services/dashboard';
 import { appointmentService } from '@/services/appointments';
 
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+const COLORS = ['#10b981', '#14b8a6', '#06b6d4', '#a855f7', '#ec4899', '#3b82f6'];
 
 const STATUS_LABELS: Record<string, string> = {
   PENDING: 'Pendiente',
   CONFIRMED: 'Confirmada',
   COMPLETED: 'Completada',
-  CANCELLED: 'Cancelada',
+  CANCELED: 'Cancelada',
   NO_SHOW: 'No asistió',
   RESCHEDULED: 'Reprogramada',
 };
@@ -80,7 +81,8 @@ export default function DashboardPage() {
   const appointmentsByDay = appointmentsByDayData?.data || [];
   const appointmentsByStatus = appointmentsByStatusData?.data || [];
   const topServices = topServicesData?.data || [];
-  const upcomingAppointments = upcomingData?.data || [];
+  // upcomingData.data is { appointments: [], pagination: {} }
+  const upcomingAppointments = upcomingData?.data?.appointments || [];
 
   // Format chart data
   const chartData = appointmentsByDay.map((item: any) => ({
@@ -102,23 +104,22 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Dashboard
+          <h1 className="text-3xl font-bold flex items-center gap-3">
+            <SparklesIcon className="w-8 h-8 text-primary-500" />
+            <span className="gradient-text">Dashboard</span>
           </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-1 text-gray-500">
             Resumen de {format(new Date(dateRange.startDate), 'MMMM yyyy', { locale: es })}
           </p>
         </div>
-        <div className="mt-4 sm:mt-0">
-          <Link to="/appointments" className="btn-primary">
-            <CalendarDaysIcon className="w-5 h-5 mr-2" />
-            Nueva Cita
-          </Link>
-        </div>
+        <Link to="/appointments" className="btn-primary">
+          <CalendarDaysIcon className="w-5 h-5 mr-2" />
+          Nueva Cita
+        </Link>
       </div>
 
       {/* Stats cards */}
@@ -161,7 +162,7 @@ export default function DashboardPage() {
         {/* Appointments over time */}
         <div className="card">
           <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold gradient-text">
               Citas por Día
             </h3>
           </div>
@@ -171,32 +172,33 @@ export default function DashboardPage() {
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorCitas" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.4} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                   <XAxis 
                     dataKey="date" 
-                    className="text-gray-600 dark:text-gray-400"
-                    tick={{ fontSize: 12 }}
+                    stroke="#64748b"
+                    tick={{ fontSize: 12, fill: '#64748b' }}
                   />
                   <YAxis 
-                    className="text-gray-600 dark:text-gray-400"
-                    tick={{ fontSize: 12 }}
+                    stroke="#64748b"
+                    tick={{ fontSize: 12, fill: '#64748b' }}
                   />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: '#1F2937',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#fff'
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #1e293b',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
                     }}
                   />
                   <Area
                     type="monotone"
                     dataKey="citas"
-                    stroke="#3B82F6"
+                    stroke="#10b981"
                     fillOpacity={1}
                     fill="url(#colorCitas)"
                     strokeWidth={2}
@@ -210,7 +212,7 @@ export default function DashboardPage() {
         {/* Appointments by status */}
         <div className="card">
           <div className="card-header">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold gradient-text">
               Citas por Estado
             </h3>
           </div>
@@ -234,16 +236,17 @@ export default function DashboardPage() {
                     </Pie>
                     <Tooltip 
                       contentStyle={{ 
-                        backgroundColor: '#1F2937',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: '#fff'
+                        backgroundColor: '#0f172a',
+                        border: '1px solid #1e293b',
+                        borderRadius: '12px',
+                        color: '#fff',
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
                       }}
                     />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <p className="text-gray-500 dark:text-gray-400">No hay datos disponibles</p>
+                <p className="text-gray-500">No hay datos disponibles</p>
               )}
             </div>
             {/* Legend */}
@@ -254,7 +257,7 @@ export default function DashboardPage() {
                     className="w-3 h-3 rounded-full mr-2"
                     style={{ backgroundColor: COLORS[index % COLORS.length] }}
                   />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="text-sm text-gray-400">
                     {entry.name}: {entry.value}
                   </span>
                 </div>
@@ -269,12 +272,12 @@ export default function DashboardPage() {
         {/* Top services */}
         <div className="card">
           <div className="card-header flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold gradient-text">
               Servicios Más Solicitados
             </h3>
             <Link
               to="/services"
-              className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400"
+              className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
             >
               Ver todos
             </Link>
@@ -283,23 +286,25 @@ export default function DashboardPage() {
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topServices} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-gray-200 dark:stroke-gray-700" />
-                  <XAxis type="number" tick={{ fontSize: 12 }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+                  <XAxis type="number" tick={{ fontSize: 12, fill: '#64748b' }} stroke="#64748b" />
                   <YAxis 
                     dataKey="name" 
                     type="category" 
                     width={100}
-                    tick={{ fontSize: 12 }}
+                    tick={{ fontSize: 12, fill: '#94a3b8' }}
+                    stroke="#64748b"
                   />
                   <Tooltip 
                     contentStyle={{ 
-                      backgroundColor: '#1F2937',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: '#fff'
+                      backgroundColor: '#0f172a',
+                      border: '1px solid #1e293b',
+                      borderRadius: '12px',
+                      color: '#fff',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
                     }}
                   />
-                  <Bar dataKey="count" fill="#3B82F6" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="count" fill="#10b981" radius={[0, 8, 8, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -309,50 +314,57 @@ export default function DashboardPage() {
         {/* Upcoming appointments */}
         <div className="card">
           <div className="card-header flex items-center justify-between">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            <h3 className="text-lg font-semibold gradient-text">
               Próximas Citas
             </h3>
             <Link
               to="/appointments"
-              className="text-sm text-primary-600 hover:text-primary-500 dark:text-primary-400"
+              className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
             >
               Ver todas
             </Link>
           </div>
-          <div className="card-body p-0">
+          <div className="p-0">
             {upcomingAppointments.length > 0 ? (
-              <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+              <ul className="divide-y divide-dark-800/50">
                 {upcomingAppointments.map((appointment: any) => (
                   <li key={appointment.id}>
                     <Link
                       to={`/appointments/${appointment.id}`}
-                      className="flex items-center px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                      className="flex items-center px-6 py-4 hover:bg-dark-800/50 transition-colors group"
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center flex-shrink-0">
+                        <span className="text-dark-950 text-sm font-semibold">
+                          {appointment.client?.firstName?.[0]}{appointment.client?.lastName?.[0]}
+                        </span>
+                      </div>
+                      <div className="ml-4 flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">
                           {appointment.client?.firstName} {appointment.client?.lastName}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                        <p className="text-sm text-gray-500 truncate">
                           {appointment.service?.name}
                         </p>
                       </div>
                       <div className="ml-4 flex-shrink-0 text-right">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white">
-                          {format(new Date(appointment.startTime), 'HH:mm')}
+                        <p className="text-sm font-semibold text-white">
+                          {appointment.startTime}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {format(new Date(appointment.startTime), 'dd MMM', { locale: es })}
+                        <p className="text-xs text-gray-500">
+                          {appointment.date ? format(new Date(appointment.date), 'dd MMM', { locale: es }) : ''}
                         </p>
                       </div>
-                      <ChevronRightIcon className="ml-4 w-5 h-5 text-gray-400" />
+                      <ChevronRightIcon className="ml-3 w-5 h-5 text-gray-600 group-hover:text-primary-400 transition-colors" />
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
               <div className="px-6 py-12 text-center">
-                <CalendarDaysIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                <div className="w-16 h-16 rounded-2xl bg-dark-800 flex items-center justify-center mx-auto mb-4">
+                  <CalendarDaysIcon className="w-8 h-8 text-gray-600" />
+                </div>
+                <p className="text-sm text-gray-500">
                   No hay citas próximas
                 </p>
               </div>
@@ -376,54 +388,55 @@ interface StatCardProps {
 }
 
 function StatCard({ title, value, icon: Icon, color, change, changeLabel, loading }: StatCardProps) {
-  const colorClasses = {
-    blue: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400',
-    green: 'bg-green-100 text-green-600 dark:bg-green-900/50 dark:text-green-400',
-    yellow: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/50 dark:text-yellow-400',
-    purple: 'bg-purple-100 text-purple-600 dark:bg-purple-900/50 dark:text-purple-400',
-    red: 'bg-red-100 text-red-600 dark:bg-red-900/50 dark:text-red-400',
+  const iconBgClasses = {
+    blue: 'bg-primary-500',
+    green: 'bg-emerald-500',
+    yellow: 'bg-amber-500',
+    purple: 'bg-fuchsia-500',
+    red: 'bg-red-500',
   };
 
   if (loading) {
     return (
-      <div className="card p-6 animate-pulse">
-        <div className="flex items-center">
-          <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700" />
-          <div className="ml-4 flex-1">
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2" />
-            <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-16" />
+      <div className="card p-6">
+        <div className="flex items-start justify-between">
+          <div className="space-y-3">
+            <div className="h-4 w-24 skeleton" />
+            <div className="h-8 w-20 skeleton" />
           </div>
+          <div className="w-12 h-12 skeleton rounded-xl" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="card p-6">
-      <div className="flex items-center">
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="w-6 h-6" />
-        </div>
-        <div className="ml-4 flex-1">
-          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+    <div className="card p-6 hover:border-dark-700 transition-all group">
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm font-medium text-gray-500">
             {title}
           </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white">
+          <p className="mt-2 text-3xl font-bold text-white">
             {value}
           </p>
+          {change !== undefined && (
+            <div className="mt-2 flex items-center gap-1">
+              {change >= 0 ? (
+                <ArrowTrendingUpIcon className="w-4 h-4 text-emerald-400" />
+              ) : (
+                <ArrowTrendingDownIcon className="w-4 h-4 text-red-400" />
+              )}
+              <span className={`text-sm font-medium ${change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                {Math.abs(change)}%
+              </span>
+              <span className="text-xs text-gray-600">{changeLabel}</span>
+            </div>
+          )}
         </div>
-        {change !== undefined && (
-          <div className="ml-4 flex items-center">
-            {change >= 0 ? (
-              <ArrowTrendingUpIcon className="w-4 h-4 text-green-500 mr-1" />
-            ) : (
-              <ArrowTrendingDownIcon className="w-4 h-4 text-red-500 mr-1" />
-            )}
-            <span className={`text-sm font-medium ${change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {Math.abs(change)}% {changeLabel}
-            </span>
-          </div>
-        )}
+        <div className={`p-3 rounded-xl ${iconBgClasses[color]} shadow-lg`}>
+          <Icon className="w-6 h-6 text-dark-950" />
+        </div>
       </div>
     </div>
   );

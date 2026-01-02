@@ -21,6 +21,7 @@ interface AppointmentModalProps {
   onClose: () => void;
   initialDate?: Date;
   onSuccess?: () => void;
+  editAppointment?: any; // For editing existing appointments
 }
 
 export default function AppointmentModal({
@@ -28,16 +29,30 @@ export default function AppointmentModal({
   onClose,
   initialDate,
   onSuccess,
+  editAppointment,
 }: AppointmentModalProps) {
+  const isEditing = !!editAppointment;
   const [clientSearch, setClientSearch] = useState('');
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [selectedEmployee, setSelectedEmployee] = useState<User | null>(null);
+  const [selectedClient, setSelectedClient] = useState<Client | null>(
+    editAppointment?.client || null
+  );
+  const [selectedService, setSelectedService] = useState<Service | null>(
+    editAppointment?.service || null
+  );
+  const [selectedEmployee, setSelectedEmployee] = useState<User | null>(
+    editAppointment?.employee || null
+  );
   const [selectedDate, setSelectedDate] = useState(
-    initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd')
+    editAppointment?.date 
+      ? format(new Date(editAppointment.date), 'yyyy-MM-dd')
+      : initialDate 
+        ? format(initialDate, 'yyyy-MM-dd') 
+        : format(new Date(), 'yyyy-MM-dd')
   );
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(
+    editAppointment?.startTime || null
+  );
 
   const {
     register,
@@ -94,25 +109,53 @@ export default function AppointmentModal({
     },
   });
 
+  // Update appointment mutation
+  const updateMutation = useMutation({
+    mutationFn: (data: any) => appointmentService.update(editAppointment?.id, data),
+    onSuccess: () => {
+      toast.success('Cita actualizada exitosamente');
+      onSuccess?.();
+      onClose();
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Error al actualizar la cita');
+    },
+  });
+
   const onSubmit = (data: any) => {
     if (!selectedClient || !selectedService || !selectedEmployee || !selectedSlot) {
       toast.error('Por favor completa todos los campos requeridos');
       return;
     }
 
-    createMutation.mutate({
+    const appointmentData = {
       clientId: selectedClient.id,
       serviceId: selectedService.id,
       employeeId: selectedEmployee.id,
+      date: selectedDate,
       startTime: selectedSlot,
       notes: data.notes,
       internalNotes: data.internalNotes,
-    });
+    };
+
+    if (isEditing) {
+      updateMutation.mutate(appointmentData);
+    } else {
+      createMutation.mutate(appointmentData);
+    }
   };
 
-  const clients = clientsData?.data || [];
-  const services = servicesData?.data || [];
-  const employees = employeesData?.data || [];
+  // Helper to extract array from API response (handles both direct arrays and nested objects)
+  const extractArray = (data: any, key?: string): any[] => {
+    if (!data) return [];
+    if (Array.isArray(data)) return data;
+    if (key && data[key] && Array.isArray(data[key])) return data[key];
+    return [];
+  };
+
+  const clients = extractArray(clientsData?.data, 'clients');
+  const services = extractArray(servicesData?.data);
+  const employees = extractArray(employeesData?.data, 'users');
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -144,7 +187,7 @@ export default function AppointmentModal({
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <Dialog.Title className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Nueva Cita
+                    {isEditing ? 'Editar Cita' : 'Nueva Cita'}
                   </Dialog.Title>
                   <button
                     onClick={onClose}
@@ -387,10 +430,13 @@ export default function AppointmentModal({
                     </button>
                     <button
                       type="submit"
-                      disabled={createMutation.isPending}
+                      disabled={createMutation.isPending || updateMutation.isPending}
                       className="btn-primary"
                     >
-                      {createMutation.isPending ? 'Creando...' : 'Crear Cita'}
+                      {isEditing 
+                        ? (updateMutation.isPending ? 'Guardando...' : 'Guardar Cambios')
+                        : (createMutation.isPending ? 'Creando...' : 'Crear Cita')
+                      }
                     </button>
                   </div>
                 </form>

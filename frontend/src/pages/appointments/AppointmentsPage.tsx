@@ -19,7 +19,7 @@ const STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string; b
   PENDING: { label: 'Pendiente', color: 'text-yellow-600', bgColor: 'bg-yellow-100 dark:bg-yellow-900/50' },
   CONFIRMED: { label: 'Confirmada', color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/50' },
   COMPLETED: { label: 'Completada', color: 'text-green-600', bgColor: 'bg-green-100 dark:bg-green-900/50' },
-  CANCELLED: { label: 'Cancelada', color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/50' },
+  CANCELED: { label: 'Cancelada', color: 'text-red-600', bgColor: 'bg-red-100 dark:bg-red-900/50' },
   NO_SHOW: { label: 'No asistió', color: 'text-gray-600', bgColor: 'bg-gray-100 dark:bg-gray-700' },
   RESCHEDULED: { label: 'Reprogramada', color: 'text-purple-600', bgColor: 'bg-purple-100 dark:bg-purple-900/50' },
 };
@@ -37,8 +37,8 @@ export default function AppointmentsPage() {
     queryFn: () => appointmentService.getAll(filters),
   });
 
-  const appointments = data?.data || [];
-  const pagination = data?.pagination;
+  const appointments = data?.data?.appointments || [];
+  const pagination = data?.data?.pagination;
 
   const handleStatusFilter = (status: AppointmentStatus | undefined) => {
     setFilters((prev) => ({ ...prev, status, page: 1 }));
@@ -185,10 +185,10 @@ export default function AppointmentsPage() {
                       </td>
                       <td>
                         <p className="font-medium text-gray-900 dark:text-white">
-                          {format(new Date(appointment.startTime), "d MMM yyyy", { locale: es })}
+                          {appointment.date ? format(new Date(appointment.date), "d MMM yyyy", { locale: es }) : '-'}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {format(new Date(appointment.startTime), 'HH:mm')} - {format(new Date(appointment.endTime), 'HH:mm')}
+                          {appointment.startTime} - {appointment.endTime}
                         </p>
                       </td>
                       <td>
@@ -231,7 +231,7 @@ export default function AppointmentsPage() {
         </div>
 
         {/* Pagination */}
-        {pagination && pagination.totalPages > 1 && (
+        {pagination && pagination.pages > 1 && (
           <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Mostrando {((pagination.page - 1) * pagination.limit) + 1} a{' '}
@@ -247,7 +247,7 @@ export default function AppointmentsPage() {
               </button>
               <button
                 onClick={() => setFilters((prev) => ({ ...prev, page: (prev.page || 1) + 1 }))}
-                disabled={pagination.page >= pagination.totalPages}
+                disabled={pagination.page >= pagination.pages}
                 className="btn-secondary btn-sm"
               >
                 Siguiente

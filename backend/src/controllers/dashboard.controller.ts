@@ -454,3 +454,148 @@ export const getRecentActivity = asyncHandler(async (req: Request, res: Response
     },
   });
 });
+
+// Appointments by status for charts
+export const getAppointmentsByStatus = asyncHandler(async (req: Request, res: Response) => {
+  const tenantId = req.tenant!.id;
+  const { startDate, endDate } = req.query;
+  
+  const where: any = { tenantId };
+  if (startDate) {
+    where.date = { gte: new Date(startDate as string) };
+  }
+  if (endDate) {
+    where.date = { ...where.date, lte: new Date(endDate as string) };
+  }
+  
+  const byStatus = await prisma.appointment.groupBy({
+    by: ['status'],
+    where,
+    _count: true,
+  });
+  
+  res.json({
+    success: true,
+    data: byStatus.map(item => ({
+      status: item.status,
+      count: item._count,
+    })),
+  });
+});
+
+// Appointments by day for charts
+export const getAppointmentsByDay = asyncHandler(async (req: Request, res: Response) => {
+  const tenantId = req.tenant!.id;
+  const { startDate, endDate } = req.query;
+  
+  const start = startDate ? new Date(startDate as string) : new Date();
+  const end = endDate ? new Date(endDate as string) : new Date();
+  
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      tenantId,
+      date: { gte: start, lte: end },
+      status: { notIn: ['CANCELED'] },
+    },
+    select: { date: true },
+  });
+  
+  // Group by date
+  const byDay: Record<string, number> = {};
+  appointments.forEach(apt => {
+    const dateStr = apt.date.toISOString().split('T')[0];
+    byDay[dateStr] = (byDay[dateStr] || 0) + 1;
+  });
+  
+  res.json({
+    success: true,
+    data: Object.entries(byDay).map(([date, count]) => ({ date, count })),
+  });
+});
+
+// Top services
+export const getTopServices = asyncHandler(async (req: Request, res: Response) => {
+  const tenantId = req.tenant!.id;
+  const { startDate, endDate, limit = '5' } = req.query;
+  
+  const where: any = { tenantId, status: 'COMPLETED' };
+  if (startDate) {
+    where.date = { gte: new Date(startDate as string) };
+  }
+  if (endDate) {
+    where.date = { ...where.date, lte: new Date(endDate as string) };
+  }
+  
+  const topServices = await prisma.appointment.groupBy({
+    by: ['serviceId'],
+    where,
+    _count: true,
+    _sum: { price: true },
+    orderBy: { _count: { serviceId: 'desc' } },
+    take: Number(limit),
+  });
+  
+  const servicesWithNames = await Promise.all(
+    topServices.map(async (item) => {
+      const service = await prisma.service.findUnique({
+        where: { id: item.serviceId },
+        select: { name: true, price: true },
+      });
+      return {
+        serviceId: item.serviceId,
+        name: service?.name || 'Desconocido',
+        count: item._count,
+        revenue: Number(item._sum.price || 0),
+      };
+    })
+  );
+  
+  res.json({
+    success: true,
+    data: servicesWithNames,
+  });
+});
+
+// Top employees
+export const getTopEmployees = asyncHandler(async (req: Request, res: Response) => {
+  const tenantId = req.tenant!.id;
+  const { startDate, endDate, limit = '5' } = req.query;
+  
+  const where: any = { tenantId, status: 'COMPLETED' };
+  if (startDate) {
+    where.date = { gte: new Date(startDate as string) };
+  }
+  if (endDate) {
+    where.date = { ...where.date, lte: new Date(endDate as string) };
+  }
+  
+  const topEmployees = await prisma.appointment.groupBy({
+    by: ['employeeId'],
+    where,
+    _count: true,
+    _sum: { price: true },
+    orderBy: { _count: { employeeId: 'desc' } },
+    take: Number(limit),
+  });
+  
+  const employeesWithNames = await Promise.all(
+    topEmployees.map(async (item) => {
+      const employee = await prisma.user.findUnique({
+        where: { id: item.employeeId },
+        select: { firstName: true, lastName: true, avatar: true },
+      });
+      return {
+        employeeId: item.employeeId,
+        name: employee ? `${employee.firstName} ${employee.lastName}` : 'Desconocido',
+        avatar: employee?.avatar,
+        count: item._count,
+        revenue: Number(item._sum.price || 0),
+      };
+    })
+  );
+  
+  res.json({
+    success: true,
+    data: employeesWithNames,
+  });
+});

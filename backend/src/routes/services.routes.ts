@@ -18,6 +18,7 @@ router.get('/', servicesController.getServices);
 router.get('/:id', servicesController.getService);
 router.post('/', requireModifyPermission, servicesController.create);
 router.put('/:id', requireModifyPermission, servicesController.update);
+router.patch('/:id/toggle-active', requireModifyPermission, servicesController.toggleActive);
 router.delete('/:id', requireDeletePermission, servicesController.remove);
 
 export default router;

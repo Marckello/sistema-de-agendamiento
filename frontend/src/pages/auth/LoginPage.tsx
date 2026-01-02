@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/context/AuthContext';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { EyeIcon, EyeSlashIcon, SparklesIcon } from '@heroicons/react/24/outline';
 
 interface LoginFormData {
   email: string;
@@ -33,16 +33,24 @@ export default function LoginPage() {
 
   return (
     <div>
+      {/* Mobile logo */}
+      <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
+        <div className="w-12 h-12 rounded-xl bg-primary-500 flex items-center justify-center">
+          <SparklesIcon className="w-7 h-7 text-dark-950" />
+        </div>
+        <span className="text-2xl font-bold text-white">CitasPro</span>
+      </div>
+
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Iniciar Sesión
+        <h2 className="text-3xl font-bold">
+          <span className="gradient-text">Bienvenido de vuelta</span>
         </h2>
-        <p className="mt-2 text-gray-600 dark:text-gray-400">
+        <p className="mt-2 text-gray-500">
           Ingresa a tu cuenta para continuar
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <div>
           <label htmlFor="email" className="label">
             Correo electrónico
@@ -62,7 +70,7 @@ export default function LoginPage() {
             placeholder="tu@email.com"
           />
           {errors.email && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+            <p className="mt-1.5 text-sm text-red-400">
               {errors.email.message}
             </p>
           )}
@@ -90,7 +98,7 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-500"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-400 transition-colors"
             >
               {showPassword ? (
                 <EyeSlashIcon className="w-5 h-5" />
@@ -100,7 +108,7 @@ export default function LoginPage() {
             </button>
           </div>
           {errors.password && (
-            <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+            <p className="mt-1.5 text-sm text-red-400">
               {errors.password.message}
             </p>
           )}
@@ -111,11 +119,11 @@ export default function LoginPage() {
             <input
               id="remember"
               type="checkbox"
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700"
+              className="h-4 w-4 rounded bg-dark-800 border-dark-600 text-primary-500 focus:ring-primary-500 focus:ring-offset-dark-900"
             />
             <label
               htmlFor="remember"
-              className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+              className="ml-2 block text-sm text-gray-400"
             >
               Recordarme
             </label>
@@ -123,7 +131,7 @@ export default function LoginPage() {
 
           <Link
             to="/forgot-password"
-            className="text-sm font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400"
+            className="text-sm font-medium text-primary-400 hover:text-primary-300 transition-colors"
           >
             ¿Olvidaste tu contraseña?
           </Link>
@@ -132,12 +140,12 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full btn-primary py-3"
+          className="w-full btn-primary py-3.5 text-base"
         >
           {isLoading ? (
             <span className="flex items-center justify-center">
               <svg
-                className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                className="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
                 fill="none"
                 viewBox="0 0 24 24"
               >
@@ -163,15 +171,25 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-gray-600 dark:text-gray-400">
-        ¿No tienes una cuenta?{' '}
+      <div className="mt-8">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-dark-800"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-dark-950 text-gray-600">
+              ¿No tienes una cuenta?
+            </span>
+          </div>
+        </div>
+
         <Link
           to="/register"
-          className="font-medium text-primary-600 hover:text-primary-500 dark:text-primary-400"
+          className="mt-4 w-full btn-secondary py-3 text-center block"
         >
-          Regístrate aquí
+          Crear cuenta gratis
         </Link>
-      </p>
+      </div>
     </div>
   );
 }

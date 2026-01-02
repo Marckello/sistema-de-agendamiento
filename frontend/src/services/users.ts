@@ -1,5 +1,5 @@
 import api from './api';
-import { User, ApiResponse } from '@/types';
+import { User, ApiResponse, UsersApiResponse } from '@/types';
 
 export interface CreateUserData {
   email: string;
@@ -25,7 +25,7 @@ export interface UpdateUserData {
 
 export const userService = {
   // Get all users
-  getAll: async (includeInactive = false): Promise<ApiResponse<User[]>> => {
+  getAll: async (includeInactive = false): Promise<UsersApiResponse> => {
     const response = await api.get(`/users?includeInactive=${includeInactive}`);
     return response.data;
   },
@@ -56,7 +56,7 @@ export const userService = {
 
   // Toggle user active status
   toggleActive: async (id: string): Promise<ApiResponse<User>> => {
-    const response = await api.post(`/users/${id}/toggle-active`);
+    const response = await api.patch(`/users/${id}/toggle-active`);
     return response.data;
   },
 
@@ -72,9 +72,14 @@ export const userService = {
     return response.data;
   },
 
-  // Get employees (users with EMPLOYEE role)
+  // Get employees (all users who can receive appointments - includes ADMIN and EMPLOYEE roles)
   getEmployees: async (): Promise<ApiResponse<User[]>> => {
-    const response = await api.get('/users?role=EMPLOYEE');
+    const response = await api.get('/users');
+    // Handle both array and object responses
+    const data = response.data?.data;
+    if (data?.users) {
+      return { ...response.data, data: data.users };
+    }
     return response.data;
   },
 
