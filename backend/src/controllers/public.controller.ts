@@ -185,10 +185,8 @@ export const getAvailability = async (
       where: {
         tenantId: tenant.id,
         employeeId: employeeId as string,
-        startTime: {
+        date: {
           gte: startOfDay(selectedDate),
-        },
-        endTime: {
           lte: endOfDay(selectedDate),
         },
         status: {
@@ -221,9 +219,17 @@ export const getAvailability = async (
       const isPast = isBefore(currentSlot, now);
 
       // Check if slot overlaps with existing appointments
+      // Note: apt.startTime and apt.endTime are strings "HH:mm"
       const isOccupied = existingAppointments.some((apt) => {
-        const aptStart = new Date(apt.startTime);
-        const aptEnd = new Date(apt.endTime);
+        const [aptStartHour, aptStartMin] = apt.startTime.split(':').map(Number);
+        const [aptEndHour, aptEndMin] = apt.endTime.split(':').map(Number);
+        
+        const aptStart = new Date(selectedDate);
+        aptStart.setHours(aptStartHour, aptStartMin, 0, 0);
+        
+        const aptEnd = new Date(selectedDate);
+        aptEnd.setHours(aptEndHour, aptEndMin, 0, 0);
+        
         return (
           (isAfter(currentSlot, aptStart) && isBefore(currentSlot, aptEnd)) ||
           (isAfter(slotEnd, aptStart) && isBefore(slotEnd, aptEnd)) ||
@@ -320,9 +326,16 @@ export const createPublicAppointment = async (
 
     // Calculate start and end times
     const [hours, minutes] = time.split(':').map(Number);
-    const startTime = parseISO(date);
-    startTime.setHours(hours, minutes, 0, 0);
-    const endTimeCalc = addMinutes(startTime, service.duration);
+    const appointmentDate = parseISO(date);
+    appointmentDate.setHours(0, 0, 0, 0);
+    
+    const startTimeDate = new Date(appointmentDate);
+    startTimeDate.setHours(hours, minutes, 0, 0);
+    const endTimeDate = addMinutes(startTimeDate, service.duration);
+    
+    // Format times as strings "HH:mm"
+    const startTimeStr = format(startTimeDate, 'HH:mm');
+    const endTimeStr = format(endTimeDate, 'HH:mm');
 
     // Create appointment
     const appointment = await prisma.appointment.create({
@@ -331,8 +344,9 @@ export const createPublicAppointment = async (
         clientId: existingClient.id,
         employeeId: employee.id,
         serviceId: service.id,
-        startTime,
-        endTime: endTimeCalc,
+        date: appointmentDate,
+        startTime: startTimeStr,
+        endTime: endTimeStr,
         price: service.price,
         status: 'PENDING',
         notes: client.notes || null,
