@@ -133,7 +133,9 @@ model User {
   
   role      UserRole @default(EMPLOYEE)
   
-  // Permiso de acceso al asistente IA
+  // Permisos de acceso
+  canModify Boolean @default(true)
+  canDelete Boolean @default(false)
   canUseAI  Boolean @default(false)
   
   // Para empleados que dan servicios

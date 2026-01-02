@@ -429,6 +429,16 @@ function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) {
                         Puede eliminar registros
                       </span>
                     </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        {...register('canUseAI')}
+                        className="w-4 h-4 text-purple-600 rounded border-gray-300 dark:border-gray-600"
+                      />
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
+                        ✨ Acceso al asistente de IA
+                      </span>
+                    </label>
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

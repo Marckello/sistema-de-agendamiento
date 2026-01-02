@@ -10,6 +10,7 @@ export interface CreateUserData {
   role: 'SUPER_ADMIN' | 'ADMIN' | 'EMPLOYEE';
   canModify?: boolean;
   canDelete?: boolean;
+  canUseAI?: boolean;
 }
 
 export interface UpdateUserData {
@@ -20,6 +21,7 @@ export interface UpdateUserData {
   role?: 'SUPER_ADMIN' | 'ADMIN' | 'EMPLOYEE';
   canModify?: boolean;
   canDelete?: boolean;
+  canUseAI?: boolean;
   isActive?: boolean;
 }
 

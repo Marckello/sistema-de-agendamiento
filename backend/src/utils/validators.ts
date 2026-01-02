@@ -41,12 +41,18 @@ export const createUserSchema = z.object({
   specialty: z.string().optional(),
   bio: z.string().optional(),
   color: z.string().optional(),
+  canModify: z.boolean().optional(),
+  canDelete: z.boolean().optional(),
+  canUseAI: z.boolean().optional(),
 });
 
 export const updateUserSchema = createUserSchema.partial().omit({ password: true }).extend({
   emailNotifications: z.boolean().optional(),
   pushNotifications: z.boolean().optional(),
   theme: z.enum(['light', 'dark', 'system']).optional(),
+  canModify: z.boolean().optional(),
+  canDelete: z.boolean().optional(),
+  canUseAI: z.boolean().optional(),
 });
 
 export const changePasswordSchema = z.object({

@@ -45,6 +45,9 @@ export const getUsers = asyncHandler(async (req: Request, res: Response) => {
         specialty: true,
         color: true,
         isActive: true,
+        canModify: true,
+        canDelete: true,
+        canUseAI: true,
         lastLogin: true,
         createdAt: true,
         services: {
@@ -106,6 +109,9 @@ export const getUser = asyncHandler(async (req: Request, res: Response) => {
       pushNotifications: true,
       theme: true,
       isActive: true,
+      canModify: true,
+      canDelete: true,
+      canUseAI: true,
       lastLogin: true,
       createdAt: true,
       services: {
