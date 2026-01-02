@@ -173,11 +173,24 @@ export async function listTenants(req: Request, res: Response) {
       where.planId = planId as string;
     }
 
+    // Determinar el ordenamiento
+    let orderBy: Prisma.TenantOrderByWithRelationInput = { createdAt: 'desc' };
+    
+    if (sortBy === 'appointments') {
+      orderBy = { appointments: { _count: sortOrder as 'asc' | 'desc' } };
+    } else if (sortBy === 'users') {
+      orderBy = { users: { _count: sortOrder as 'asc' | 'desc' } };
+    } else if (sortBy === 'clients') {
+      orderBy = { clients: { _count: sortOrder as 'asc' | 'desc' } };
+    } else if (['name', 'createdAt', 'updatedAt'].includes(sortBy as string)) {
+      orderBy = { [sortBy as string]: sortOrder };
+    }
+
     const [tenants, total] = await Promise.all([
       prisma.tenant.findMany({
         where,
         include: {
-          plan: { select: { name: true, displayName: true } },
+          plan: { select: { id: true, name: true, displayName: true, price: true } },
           _count: {
             select: {
               users: true,
@@ -187,7 +200,7 @@ export async function listTenants(req: Request, res: Response) {
             },
           },
         },
-        orderBy: { [sortBy as string]: sortOrder },
+        orderBy,
         skip,
         take,
       }),
