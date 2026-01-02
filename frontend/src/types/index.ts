@@ -23,13 +23,17 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
+  // Datos del negocio
+  name: string;
+  slug: string;
   email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  tenantName: string;
-  tenantSubdomain: string;
   phone?: string;
+  // Datos del admin
+  adminEmail: string;
+  adminPassword: string;
+  adminFirstName: string;
+  adminLastName: string;
+  adminPhone?: string;
 }
 
 // Tenant types

@@ -33,13 +33,17 @@ export default function RegisterPage() {
     setIsLoading(true);
     try {
       await registerUser({
-        firstName: data.firstName,
-        lastName: data.lastName,
-        email: data.email,
-        password: data.password,
-        tenantName: data.tenantName,
-        tenantSubdomain: data.tenantSubdomain,
+        // Datos del negocio
+        name: data.tenantName,
+        slug: data.tenantSubdomain,
+        email: data.email, // Email del negocio
         phone: data.phone,
+        // Datos del admin
+        adminEmail: data.email,
+        adminPassword: data.password,
+        adminFirstName: data.firstName,
+        adminLastName: data.lastName,
+        adminPhone: data.phone,
       });
     } catch (error) {
       // Error is handled in AuthContext
