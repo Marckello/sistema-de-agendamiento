@@ -634,6 +634,7 @@ class WhatsAppService extends EventEmitter {
     dailyMessageCount: number;
     dailyLimitReached: boolean;
     isOperatingHours: boolean;
+    needsReconnect: boolean;
   }> {
     const session = await prisma.whatsAppSession.findUnique({
       where: { tenantId }
@@ -641,13 +642,52 @@ class WhatsAppService extends EventEmitter {
     
     const instance = this.instances.get(tenantId);
     
+    // Determinar el estado real
+    let effectiveStatus = session?.status || 'DISCONNECTED';
+    let needsReconnect = false;
+    
+    // Si la BD dice que está conectado pero no hay instancia en memoria, necesita reconexión
+    if ((effectiveStatus === 'CONNECTED' || effectiveStatus === 'AUTHENTICATED') && !instance) {
+      // Intentar verificar si hay sesión guardada que podamos restaurar
+      needsReconnect = true;
+      // No cambiar el estado aún, dejar que el usuario decida si reconectar
+    }
+    
+    // Si el estado es QR_READY pero no hay QR en memoria (expiró), volver a DISCONNECTED
+    if (effectiveStatus === 'QR_READY' && (!instance || !instance.qrCode)) {
+      effectiveStatus = 'DISCONNECTED';
+      needsReconnect = true;
+      
+      // Actualizar BD para reflejar el estado real
+      await prisma.whatsAppSession.update({
+        where: { tenantId },
+        data: { status: 'DISCONNECTED' }
+      });
+    }
+    
+    // Si hay instancia y está conectada, verificar que realmente está viva
+    if (instance && effectiveStatus === 'CONNECTED') {
+      try {
+        const state = await instance.client.getState();
+        if (state !== 'CONNECTED') {
+          effectiveStatus = 'DISCONNECTED';
+          needsReconnect = true;
+        }
+      } catch (error) {
+        // Si hay error al verificar, probablemente no está conectada
+        effectiveStatus = 'DISCONNECTED';
+        needsReconnect = true;
+      }
+    }
+    
     return {
-      status: session?.status || 'DISCONNECTED',
+      status: effectiveStatus as WhatsAppStatus,
       phone: session?.phone || undefined,
       qrCode: instance?.qrCode || undefined,
       dailyMessageCount: session?.dailyMessageCount || 0,
       dailyLimitReached: session?.dailyLimitReached || false,
-      isOperatingHours: this.isOperatingHours()
+      isOperatingHours: this.isOperatingHours(),
+      needsReconnect
     };
   }
   

@@ -7,6 +7,7 @@ export interface WhatsAppStatus {
   dailyMessageCount: number;
   dailyLimitReached: boolean;
   isOperatingHours: boolean;
+  needsReconnect?: boolean;
 }
 
 export interface WhatsAppConfig {

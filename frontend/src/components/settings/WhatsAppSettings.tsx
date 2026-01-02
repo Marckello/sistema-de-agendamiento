@@ -251,12 +251,14 @@ export default function WhatsAppSettings() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* QR Code / Estado */}
               <div className="bg-dark-900 rounded-xl p-6 flex flex-col items-center justify-center min-h-[300px]">
-                {status?.status === 'DISCONNECTED' || status?.status === 'SLEEPING' ? (
+                {status?.status === 'DISCONNECTED' || status?.status === 'SLEEPING' || status?.needsReconnect ? (
                   <>
                     <PowerOff className="w-16 h-16 text-dark-500 mb-4" />
                     <p className="text-dark-400 mb-4 text-center">
                       {status?.status === 'SLEEPING' 
                         ? 'WhatsApp está en modo reposo (fuera de horario)'
+                        : status?.needsReconnect
+                        ? 'La sesión expiró. Reconecta para continuar.'
                         : 'WhatsApp no está conectado'}
                     </p>
                     <button
@@ -267,12 +269,12 @@ export default function WhatsAppSettings() {
                       {isConnecting ? (
                         <>
                           <Loader2 className="w-5 h-5 animate-spin" />
-                          Conectando...
+                          Generando QR...
                         </>
                       ) : (
                         <>
-                          <Power className="w-5 h-5" />
-                          Conectar WhatsApp
+                          <QrCode className="w-5 h-5" />
+                          {status?.needsReconnect ? 'Generar nuevo QR' : 'Conectar WhatsApp'}
                         </>
                       )}
                     </button>
@@ -286,6 +288,39 @@ export default function WhatsAppSettings() {
                     <p className="text-dark-400 text-sm mt-4 text-center">
                       Abre WhatsApp → Menú → Dispositivos vinculados → Vincular dispositivo
                     </p>
+                    <button
+                      onClick={handleConnect}
+                      disabled={isConnecting}
+                      className="mt-4 px-4 py-2 bg-dark-700 hover:bg-dark-600 text-white rounded-lg text-sm flex items-center gap-2 transition-colors"
+                    >
+                      <RefreshCw className={`w-4 h-4 ${isConnecting ? 'animate-spin' : ''}`} />
+                      Regenerar QR
+                    </button>
+                  </>
+                ) : status?.status === 'QR_READY' && !status?.qrCode ? (
+                  <>
+                    <AlertTriangle className="w-16 h-16 text-yellow-500 mb-4" />
+                    <p className="text-white font-medium mb-2">El código QR expiró</p>
+                    <p className="text-dark-400 text-sm mb-4 text-center">
+                      Genera un nuevo código QR para conectar
+                    </p>
+                    <button
+                      onClick={handleConnect}
+                      disabled={isConnecting}
+                      className="px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-green-600/50 text-white rounded-lg font-medium flex items-center gap-2 transition-colors"
+                    >
+                      {isConnecting ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Generando...
+                        </>
+                      ) : (
+                        <>
+                          <QrCode className="w-5 h-5" />
+                          Generar nuevo QR
+                        </>
+                      )}
+                    </button>
                   </>
                 ) : status?.status === 'CONNECTING' || status?.status === 'AUTHENTICATED' ? (
                   <>
