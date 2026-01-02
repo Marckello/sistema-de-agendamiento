@@ -221,8 +221,7 @@ export interface CalendarEvent {
 }
 
 export interface TimeSlot {
-  start: string;
-  end: string;
+  time: string;
   available: boolean;
 }
 

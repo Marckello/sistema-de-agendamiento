@@ -495,6 +495,22 @@ gender: z.string().optional().transform(val => val?.toLowerCase()),
 - Modal de confirmación para cancelar
 - Soporte de edición en `AppointmentModal` con prop `editAppointment`
 
+### 6. Selector de hora no mostraba slots
+**Problema**: El frontend usaba `slot.start` pero el backend devuelve `slot.time`.
+
+**Solución**: 
+- Actualizado `TimeSlot` interface en `types/index.ts` de `{ start, end, available }` a `{ time, available }`
+- Actualizado `AppointmentModal.tsx` para usar `slot.time`
+- Agregado mensaje de ayuda cuando no hay horarios disponibles
+
+### 7. No había forma de crear categorías de servicio
+**Problema**: El select de categoría existía pero no había botón para crear nuevas categorías.
+
+**Solución**: En `ServicesPage.tsx`:
+- Agregado botón "Nueva Categoría" en el header
+- Creado componente `CategoryModal` con formulario (nombre, descripción, color)
+- Integrado con `serviceService.createCategory()`
+
 ---
 
 ## 📊 Estado Actual del Desarrollo

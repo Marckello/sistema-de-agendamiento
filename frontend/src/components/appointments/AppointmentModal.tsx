@@ -380,22 +380,26 @@ export default function AppointmentModal({
                             .filter((slot) => slot.available)
                             .map((slot) => (
                               <button
-                                key={slot.start}
+                                key={slot.time}
                                 type="button"
-                                onClick={() => setSelectedSlot(slot.start)}
+                                onClick={() => setSelectedSlot(slot.time)}
                                 className={`px-3 py-2 text-sm font-medium rounded-lg border transition-colors ${
-                                  selectedSlot === slot.start
+                                  selectedSlot === slot.time
                                     ? 'bg-primary-600 text-white border-primary-600'
                                     : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-primary-500'
                                 }`}
                               >
-                                {format(new Date(slot.start), 'HH:mm')}
+                                {slot.time}
                               </button>
                             ))}
                         </div>
+                      ) : availableSlots.length === 0 && selectedEmployee && selectedService ? (
+                        <p className="text-sm text-yellow-500 dark:text-yellow-400">
+                          No hay horarios disponibles. Verifica que el empleado tenga horario configurado.
+                        </p>
                       ) : (
                         <p className="text-sm text-gray-500 dark:text-gray-400">
-                          No hay horarios disponibles para esta fecha
+                          Selecciona empleado, servicio y fecha para ver horarios
                         </p>
                       )}
                     </div>

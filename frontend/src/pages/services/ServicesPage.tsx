@@ -12,6 +12,7 @@ import {
   XMarkIcon,
   EyeIcon,
   EyeSlashIcon,
+  FolderPlusIcon,
 } from '@heroicons/react/24/outline';
 import { serviceService } from '@/services/services';
 import { Service, CreateServiceData, ServiceCategory } from '@/types';
@@ -19,6 +20,7 @@ import { Service, CreateServiceData, ServiceCategory } from '@/types';
 export default function ServicesPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
 
   const { data: servicesData, isLoading } = useQuery({
@@ -92,10 +94,19 @@ export default function ServicesPage() {
             Gestiona los servicios que ofreces
           </p>
         </div>
-        <button onClick={() => handleOpenModal()} className="btn-primary">
-          <PlusIcon className="w-5 h-5 mr-2" />
-          Nuevo Servicio
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => setIsCategoryModalOpen(true)} 
+            className="btn-secondary flex items-center"
+          >
+            <FolderPlusIcon className="w-5 h-5 mr-2" />
+            Nueva Categoría
+          </button>
+          <button onClick={() => handleOpenModal()} className="btn-primary">
+            <PlusIcon className="w-5 h-5 mr-2" />
+            Nuevo Servicio
+          </button>
+        </div>
       </div>
 
       {/* Services Grid */}
@@ -214,6 +225,16 @@ export default function ServicesPage() {
         onSuccess={() => {
           handleCloseModal();
           queryClient.invalidateQueries({ queryKey: ['services'] });
+        }}
+      />
+
+      {/* Category Modal */}
+      <CategoryModal
+        isOpen={isCategoryModalOpen}
+        onClose={() => setIsCategoryModalOpen(false)}
+        onSuccess={() => {
+          setIsCategoryModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['service-categories'] });
         }}
       />
     </div>
@@ -466,6 +487,140 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
                     </button>
                     <button type="submit" disabled={isLoading} className="btn-primary">
                       {isLoading ? 'Guardando...' : service ? 'Actualizar' : 'Crear'}
+                    </button>
+                  </div>
+                </form>
+              </Dialog.Panel>
+            </Transition.Child>
+          </div>
+        </div>
+      </Dialog>
+    </Transition>
+  );
+}
+
+// Category Modal Component
+interface CategoryModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess?: () => void;
+}
+
+function CategoryModal({ isOpen, onClose, onSuccess }: CategoryModalProps) {
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<{ name: string; description?: string; color?: string }>({
+    defaultValues: {
+      color: '#3B82F6',
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: { name: string; description?: string; color?: string }) =>
+      serviceService.createCategory(data),
+    onSuccess: () => {
+      toast.success('Categoría creada');
+      reset();
+      onSuccess?.();
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Error al crear categoría');
+    },
+  });
+
+  const onSubmit = (data: { name: string; description?: string; color?: string }) => {
+    createMutation.mutate(data);
+  };
+
+  return (
+    <Transition appear show={isOpen} as={Fragment}>
+      <Dialog as="div" className="relative z-50" onClose={onClose}>
+        <Transition.Child
+          as={Fragment}
+          enter="ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="fixed inset-0 bg-black/50" />
+        </Transition.Child>
+
+        <div className="fixed inset-0 overflow-y-auto">
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Transition.Child
+              as={Fragment}
+              enter="ease-out duration-300"
+              enterFrom="opacity-0 scale-95"
+              enterTo="opacity-100 scale-100"
+              leave="ease-in duration-200"
+              leaveFrom="opacity-100 scale-100"
+              leaveTo="opacity-0 scale-95"
+            >
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-xl transition-all">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                  <Dialog.Title className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Nueva Categoría
+                  </Dialog.Title>
+                  <button
+                    onClick={onClose}
+                    className="p-2 text-gray-400 hover:text-gray-500 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    <XMarkIcon className="w-5 h-5" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+                  <div>
+                    <label className="label">Nombre *</label>
+                    <input
+                      {...register('name', { required: 'Requerido' })}
+                      className={`input ${errors.name ? 'input-error' : ''}`}
+                      placeholder="Ej: Cortes, Tratamientos, Coloración..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="label">Descripción</label>
+                    <textarea
+                      {...register('description')}
+                      rows={2}
+                      className="input"
+                      placeholder="Descripción de la categoría..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="label">Color</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        {...register('color')}
+                        className="h-10 w-20 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        {...register('color')}
+                        className="input flex-1"
+                        placeholder="#3B82F6"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" onClick={onClose} className="btn-secondary">
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={createMutation.isPending}
+                      className="btn-primary"
+                    >
+                      {createMutation.isPending ? 'Creando...' : 'Crear Categoría'}
                     </button>
                   </div>
                 </form>
