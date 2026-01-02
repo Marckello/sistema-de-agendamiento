@@ -221,6 +221,14 @@ export const updateTenantSettingsSchema = z.object({
   webhookUrl: z.string().url().optional().or(z.literal('')),
   webhookSecret: z.string().optional(),
   webhookActive: z.boolean().optional(),
+  // SMTP Configuration
+  smtpHost: z.string().optional().or(z.literal('')),
+  smtpPort: z.number().min(1).max(65535).optional(),
+  smtpUser: z.string().optional().or(z.literal('')),
+  smtpPass: z.string().optional().or(z.literal('')),
+  smtpFrom: z.string().email().optional().or(z.literal('')),
+  smtpFromName: z.string().optional().or(z.literal('')),
+  smtpEnabled: z.boolean().optional(),
 });
 
 // Notification template schema

@@ -3,8 +3,8 @@ import { config } from '../config/index.js';
 import prisma from '../config/database.js';
 import { Appointment, Client, User, Service, Tenant, NotificationType, NotificationChannel } from '@prisma/client';
 
-// Crear transportador de email
-const transporter = nodemailer.createTransport({
+// Crear transportador global (para notificaciones de plataforma)
+const globalTransporter = nodemailer.createTransport({
   host: config.smtp.host,
   port: config.smtp.port,
   secure: config.smtp.port === 465,
@@ -13,6 +13,37 @@ const transporter = nodemailer.createTransport({
     pass: config.smtp.pass,
   },
 });
+
+// Crear transportador para un tenant específico
+function createTenantTransporter(tenant: Tenant) {
+  if (!tenant.smtpEnabled || !tenant.smtpHost || !tenant.smtpUser || !tenant.smtpPass) {
+    return null;
+  }
+  
+  return nodemailer.createTransport({
+    host: tenant.smtpHost,
+    port: tenant.smtpPort || 587,
+    secure: tenant.smtpPort === 465,
+    auth: {
+      user: tenant.smtpUser,
+      pass: tenant.smtpPass,
+    },
+  });
+}
+
+// Obtener configuración de envío para un tenant
+function getTenantEmailConfig(tenant: Tenant) {
+  if (tenant.smtpEnabled && tenant.smtpFrom) {
+    return {
+      fromEmail: tenant.smtpFrom,
+      fromName: tenant.smtpFromName || tenant.name,
+    };
+  }
+  return {
+    fromEmail: config.smtp.fromEmail,
+    fromName: config.smtp.fromName,
+  };
+}
 
 // Variables disponibles para plantillas
 interface TemplateVariables {
@@ -111,7 +142,7 @@ async function getAppointmentVariables(
   };
 }
 
-// Enviar email
+// Enviar email (global - para notificaciones de plataforma)
 export async function sendEmail(
   to: string,
   subject: string,
@@ -119,7 +150,7 @@ export async function sendEmail(
   html?: string
 ): Promise<boolean> {
   try {
-    await transporter.sendMail({
+    await globalTransporter.sendMail({
       from: `"${config.smtp.fromName}" <${config.smtp.fromEmail}>`,
       to,
       subject,
@@ -130,6 +161,34 @@ export async function sendEmail(
     return true;
   } catch (error) {
     console.error('Error sending email:', error);
+    return false;
+  }
+}
+
+// Enviar email con configuración de tenant (para notificaciones de citas)
+export async function sendTenantEmail(
+  tenant: Tenant,
+  to: string,
+  subject: string,
+  body: string,
+  html?: string
+): Promise<boolean> {
+  try {
+    // Usar transporter del tenant si está configurado, sino el global
+    const transporter = createTenantTransporter(tenant) || globalTransporter;
+    const emailConfig = getTenantEmailConfig(tenant);
+    
+    await transporter.sendMail({
+      from: `"${emailConfig.fromName}" <${emailConfig.fromEmail}>`,
+      to,
+      subject,
+      text: body,
+      html: html || body.replace(/\n/g, '<br>'),
+    });
+    
+    return true;
+  } catch (error) {
+    console.error('Error sending tenant email:', error);
     return false;
   }
 }
@@ -189,10 +248,10 @@ export async function sendAppointmentNotification(
       return false;
     }
     
-    // Enviar según canal
+    // Enviar según canal - usar email del tenant
     let success = false;
     if (channel === 'EMAIL') {
-      success = await sendEmail(recipient, subject, body);
+      success = await sendTenantEmail(appointment.tenant, recipient, subject, body);
     }
     
     // Registrar en log
@@ -260,7 +319,8 @@ async function sendDefaultNotification(
       return false;
   }
   
-  const success = await sendEmail(appointment.client.email, subject, body);
+  // Usar email del tenant para notificaciones de citas
+  const success = await sendTenantEmail(appointment.tenant, appointment.client.email, subject, body);
   
   await prisma.notificationLog.create({
     data: {

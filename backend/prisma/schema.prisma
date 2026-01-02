@@ -83,6 +83,15 @@ model Tenant {
   webhookSecret String?
   webhookActive Boolean @default(false)
   
+  // SMTP Configuration (para notificaciones del tenant)
+  smtpHost     String?
+  smtpPort     Int?     @default(587)
+  smtpUser     String?
+  smtpPass     String?
+  smtpFrom     String?  // Email "from" address
+  smtpFromName String?  // Display name for emails
+  smtpEnabled  Boolean  @default(false)
+  
   // Plan y suscripción
   planId             String
   plan               Plan     @relation(fields: [planId], references: [id])
