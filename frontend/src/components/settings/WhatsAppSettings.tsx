@@ -46,7 +46,7 @@ export default function WhatsAppSettings() {
   const [logs, setLogs] = useState<WhatsAppMessageLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
-  const [pollInterval, setPollInterval] = useState<NodeJS.Timeout | null>(null);
+  const [pollInterval, setPollInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   
   // Form states
   const [testPhone, setTestPhone] = useState('');
