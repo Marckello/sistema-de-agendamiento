@@ -95,10 +95,9 @@ export default function AppointmentModal({
   });
 
   useEffect(() => {
-    // Los slots vienen en data.slots, no directamente en data
-    const slots = slotsData?.data?.slots || slotsData?.data || [];
-    if (Array.isArray(slots)) {
-      setAvailableSlots(slots);
+    // Los slots vienen en data.slots
+    if (slotsData?.data?.slots) {
+      setAvailableSlots(slotsData.data.slots);
     } else {
       setAvailableSlots([]);
     }

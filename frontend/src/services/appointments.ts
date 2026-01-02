@@ -73,7 +73,7 @@ export const appointmentService = {
     employeeId: string,
     serviceId: string,
     date: string
-  ): Promise<ApiResponse<TimeSlot[]>> => {
+  ): Promise<ApiResponse<{ slots: TimeSlot[]; date: string; employeeId: string; serviceId: string; serviceDuration: number }>> => {
     const response = await api.get(`/appointments/availability`, {
       params: { employeeId, serviceId, date },
     });
