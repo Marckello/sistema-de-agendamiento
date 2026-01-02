@@ -835,6 +835,80 @@ Este documento contiene TODO el contexto necesario para:
 
 ---
 
+## 🤖 Chat de IA (Asistente de Citas)
+
+### Descripción
+Chat flotante integrado en el dashboard que permite a los usuarios interactuar con un asistente de IA para gestionar citas mediante lenguaje natural.
+
+### Características
+- **Consultar citas**: "¿Cuáles son las citas de hoy?", "¿Cuántas citas tengo el sábado?"
+- **Crear citas**: Con confirmación antes de ejecutar
+- **Cancelar citas**: Con confirmación y razón
+- **Reagendar citas**: Con confirmación de nueva fecha/hora
+- **Contexto por rol**: SUPER_ADMIN ve todas las citas, empleados solo las suyas
+
+### Archivos Clave
+```
+backend/
+  src/
+    services/ai.service.ts       # Lógica de OpenAI y contexto
+    controllers/chat.controller.ts
+    routes/chat.routes.ts
+
+frontend/
+  src/
+    services/chat.ts             # Cliente API
+    components/chat/AIChat.tsx   # Componente flotante
+```
+
+### Permisos
+- Campo `canUseAI` en modelo User (Boolean, default false)
+- Se asigna al crear/editar usuario
+- Sin el permiso, el botón de chat no aparece
+
+### Configuración
+```env
+OPENAI_API_KEY=sk-proj-...
+```
+
+### API Endpoints
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | /api/chat | Enviar mensaje |
+| POST | /api/chat/execute | Ejecutar acción confirmada |
+| GET | /api/chat/access | Verificar acceso del usuario |
+
+---
+
+## 📅 Mejoras en Servicios (Enero 2026)
+
+### Nuevo Modelo: ServiceSchedule
+Permite definir días y horarios específicos para cada servicio.
+
+```prisma
+model ServiceSchedule {
+  id        String  @id @default(uuid())
+  serviceId String
+  dayOfWeek   Int      // 0=Dom, 1=Lun, etc.
+  isAvailable Boolean
+  startTime   String   // "09:00"
+  endTime     String   // "18:00"
+  
+  @@unique([serviceId, dayOfWeek])
+}
+```
+
+### Modal de Servicio con 3 Pestañas
+1. **General**: Nombre, duración, precio, categoría, etc.
+2. **Empleados**: Checkboxes para asignar empleados al servicio
+3. **Horarios**: Días de la semana con horarios por día
+
+### Campos Agregados a Service
+- `employees`: Lista de empleados asignados
+- `schedules`: Horarios por día de la semana
+
+---
+
 **Documento creado por GitHub Copilot**  
 **Proyecto: CitasPro - Gestión de Citas**  
 **Cliente: Serrano Marketing**

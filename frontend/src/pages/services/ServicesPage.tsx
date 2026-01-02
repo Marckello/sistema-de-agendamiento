@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, Transition } from '@headlessui/react';
 import { useForm } from 'react-hook-form';
@@ -13,9 +13,12 @@ import {
   EyeIcon,
   EyeSlashIcon,
   FolderPlusIcon,
+  UserGroupIcon,
+  CalendarDaysIcon,
 } from '@heroicons/react/24/outline';
 import { serviceService } from '@/services/services';
-import { Service, CreateServiceData, ServiceCategory } from '@/types';
+import { userService } from '@/services/users';
+import { Service, CreateServiceData, ServiceCategory, User } from '@/types';
 
 export default function ServicesPage() {
   const queryClient = useQueryClient();
@@ -250,7 +253,35 @@ interface ServiceModalProps {
   onSuccess?: () => void;
 }
 
+const DAYS_OF_WEEK = [
+  { value: 1, label: 'Lunes', short: 'Lun' },
+  { value: 2, label: 'Martes', short: 'Mar' },
+  { value: 3, label: 'Miércoles', short: 'Mié' },
+  { value: 4, label: 'Jueves', short: 'Jue' },
+  { value: 5, label: 'Viernes', short: 'Vie' },
+  { value: 6, label: 'Sábado', short: 'Sáb' },
+  { value: 0, label: 'Domingo', short: 'Dom' },
+];
+
+interface ScheduleDay {
+  dayOfWeek: number;
+  isAvailable: boolean;
+  startTime: string;
+  endTime: string;
+}
+
 function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: ServiceModalProps) {
+  const [activeTab, setActiveTab] = useState<'general' | 'employees' | 'schedule'>('general');
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleDay[]>(
+    DAYS_OF_WEEK.map(day => ({
+      dayOfWeek: day.value,
+      isAvailable: day.value >= 1 && day.value <= 5, // Lun-Vie por defecto
+      startTime: '09:00',
+      endTime: '18:00',
+    }))
+  );
+
   const {
     register,
     handleSubmit,
@@ -281,11 +312,81 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
     },
   });
 
+  // Fetch employees
+  const { data: employeesData } = useQuery({
+    queryKey: ['employees'],
+    queryFn: () => userService.getEmployees(),
+    enabled: isOpen,
+  });
+  const employees = employeesData?.data || [];
+
+  // Cargar datos del servicio cuando se edita
+  useEffect(() => {
+    if (service && isOpen) {
+      // Cargar empleados asignados
+      if (service.employees) {
+        setSelectedEmployees(service.employees.map(e => e.id));
+      }
+      // Cargar horarios
+      if (service.schedules && service.schedules.length > 0) {
+        const loadedSchedules = DAYS_OF_WEEK.map(day => {
+          const found = service.schedules?.find(s => s.dayOfWeek === day.value);
+          return found ? {
+            dayOfWeek: found.dayOfWeek,
+            isAvailable: found.isAvailable,
+            startTime: found.startTime,
+            endTime: found.endTime,
+          } : {
+            dayOfWeek: day.value,
+            isAvailable: false,
+            startTime: '09:00',
+            endTime: '18:00',
+          };
+        });
+        setSchedules(loadedSchedules);
+      }
+    } else if (!service && isOpen) {
+      // Reset para nuevo servicio
+      setSelectedEmployees([]);
+      setSchedules(DAYS_OF_WEEK.map(day => ({
+        dayOfWeek: day.value,
+        isAvailable: day.value >= 1 && day.value <= 5,
+        startTime: '09:00',
+        endTime: '18:00',
+      })));
+    }
+  }, [service, isOpen]);
+
+  const toggleEmployee = (employeeId: string) => {
+    setSelectedEmployees(prev =>
+      prev.includes(employeeId)
+        ? prev.filter(id => id !== employeeId)
+        : [...prev, employeeId]
+    );
+  };
+
+  const toggleDay = (dayOfWeek: number) => {
+    setSchedules(prev =>
+      prev.map(s =>
+        s.dayOfWeek === dayOfWeek ? { ...s, isAvailable: !s.isAvailable } : s
+      )
+    );
+  };
+
+  const updateScheduleTime = (dayOfWeek: number, field: 'startTime' | 'endTime', value: string) => {
+    setSchedules(prev =>
+      prev.map(s =>
+        s.dayOfWeek === dayOfWeek ? { ...s, [field]: value } : s
+      )
+    );
+  };
+
   const createMutation = useMutation({
     mutationFn: (data: CreateServiceData) => serviceService.create(data),
     onSuccess: () => {
       toast.success('Servicio creado');
       reset();
+      setActiveTab('general');
       onSuccess?.();
     },
     onError: (error: any) => {
@@ -305,7 +406,6 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
   });
 
   const onSubmit = (data: CreateServiceData) => {
-    // Convert string numbers to actual numbers
     const formattedData = {
       ...data,
       duration: Number(data.duration),
@@ -313,6 +413,13 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
       price: Number(data.price),
       maxAdvanceBooking: Number(data.maxAdvanceBooking || 30),
       minAdvanceBooking: Number(data.minAdvanceBooking || 1),
+      employeeIds: selectedEmployees,
+      schedules: schedules.filter(s => s.isAvailable).map(s => ({
+        dayOfWeek: s.dayOfWeek,
+        isAvailable: s.isAvailable,
+        startTime: s.startTime,
+        endTime: s.endTime,
+      })),
     };
 
     if (service) {
@@ -350,7 +457,7 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-lg transform overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-xl transition-all">
+              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-xl bg-white dark:bg-gray-800 shadow-xl transition-all">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                   <Dialog.Title className="text-lg font-semibold text-gray-900 dark:text-white">
                     {service ? 'Editar Servicio' : 'Nuevo Servicio'}
@@ -363,125 +470,279 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
                   </button>
                 </div>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
-                  <div>
-                    <label className="label">Nombre *</label>
-                    <input
-                      {...register('name', { required: 'Requerido' })}
-                      className={`input ${errors.name ? 'input-error' : ''}`}
-                      placeholder="Corte de cabello"
-                    />
-                  </div>
+                {/* Tabs */}
+                <div className="flex border-b border-gray-200 dark:border-gray-700 px-6">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('general')}
+                    className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                      activeTab === 'general'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                    }`}
+                  >
+                    General
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('employees')}
+                    className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-2 ${
+                      activeTab === 'employees'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                    }`}
+                  >
+                    <UserGroupIcon className="w-4 h-4" />
+                    Empleados
+                    {selectedEmployees.length > 0 && (
+                      <span className="bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-400 text-xs px-2 py-0.5 rounded-full">
+                        {selectedEmployees.length}
+                      </span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('schedule')}
+                    className={`px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-2 ${
+                      activeTab === 'schedule'
+                        ? 'border-primary-500 text-primary-600 dark:text-primary-400'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                    }`}
+                  >
+                    <CalendarDaysIcon className="w-4 h-4" />
+                    Horarios
+                  </button>
+                </div>
 
-                  <div>
-                    <label className="label">Descripción</label>
-                    <textarea
-                      {...register('description')}
-                      rows={2}
-                      className="input"
-                      placeholder="Descripción del servicio..."
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="label">Duración (min) *</label>
-                      <input
-                        type="number"
-                        {...register('duration', { required: 'Requerido', min: 5 })}
-                        className={`input ${errors.duration ? 'input-error' : ''}`}
-                        min="5"
-                        step="5"
-                      />
-                    </div>
-                    <div>
-                      <label className="label">Tiempo buffer (min)</label>
-                      <input
-                        type="number"
-                        {...register('bufferTime')}
-                        className="input"
-                        min="0"
-                        step="5"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="label">Precio *</label>
-                      <input
-                        type="number"
-                        {...register('price', { required: 'Requerido', min: 0 })}
-                        className={`input ${errors.price ? 'input-error' : ''}`}
-                        min="0"
-                        step="0.01"
-                      />
-                    </div>
-                    <div>
-                      <label className="label">Color</label>
-                      <div className="flex gap-2">
+                <form onSubmit={handleSubmit(onSubmit)} className="p-6">
+                  {/* Tab: General */}
+                  {activeTab === 'general' && (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="label">Nombre *</label>
                         <input
-                          type="color"
-                          {...register('color')}
-                          className="h-10 w-20 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
-                        />
-                        <input
-                          type="text"
-                          {...register('color')}
-                          className="input flex-1"
-                          placeholder="#3B82F6"
+                          {...register('name', { required: 'Requerido' })}
+                          className={`input ${errors.name ? 'input-error' : ''}`}
+                          placeholder="Corte de cabello"
                         />
                       </div>
+
+                      <div>
+                        <label className="label">Descripción</label>
+                        <textarea
+                          {...register('description')}
+                          rows={2}
+                          className="input"
+                          placeholder="Descripción del servicio..."
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="label">Duración (min) *</label>
+                          <input
+                            type="number"
+                            {...register('duration', { required: 'Requerido', min: 5 })}
+                            className={`input ${errors.duration ? 'input-error' : ''}`}
+                            min="5"
+                            step="5"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">Tiempo buffer (min)</label>
+                          <input
+                            type="number"
+                            {...register('bufferTime')}
+                            className="input"
+                            min="0"
+                            step="5"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="label">Precio *</label>
+                          <input
+                            type="number"
+                            {...register('price', { required: 'Requerido', min: 0 })}
+                            className={`input ${errors.price ? 'input-error' : ''}`}
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">Color</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              {...register('color')}
+                              className="h-10 w-20 rounded border border-gray-300 dark:border-gray-600 cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              {...register('color')}
+                              className="input flex-1"
+                              placeholder="#3B82F6"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="label">Categoría</label>
+                        <select {...register('categoryId')} className="input">
+                          <option value="">Sin categoría</option>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="label">Reserva mínima anticipada (días)</label>
+                          <input
+                            type="number"
+                            {...register('minAdvanceBooking')}
+                            className="input"
+                            min="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="label">Reserva máxima anticipada (días)</label>
+                          <input
+                            type="number"
+                            {...register('maxAdvanceBooking')}
+                            className="input"
+                            min="1"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            {...register('requiresConfirmation')}
+                            className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600"
+                          />
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            Requiere confirmación manual
+                          </span>
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div>
-                    <label className="label">Categoría</label>
-                    <select {...register('categoryId')} className="input">
-                      <option value="">Sin categoría</option>
-                      {categories.map((category) => (
-                        <option key={category.id} value={category.id}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="label">Reserva mínima anticipada (días)</label>
-                      <input
-                        type="number"
-                        {...register('minAdvanceBooking')}
-                        className="input"
-                        min="0"
-                      />
+                  {/* Tab: Empleados */}
+                  {activeTab === 'employees' && (
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Selecciona los empleados que pueden realizar este servicio
+                      </p>
+                      
+                      {employees.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                          No hay empleados registrados
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto">
+                          {employees.map((employee: User) => (
+                            <label
+                              key={employee.id}
+                              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                                selectedEmployees.includes(employee.id)
+                                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                  : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedEmployees.includes(employee.id)}
+                                onChange={() => toggleEmployee(employee.id)}
+                                className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600"
+                              />
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                                  {employee.firstName?.[0]}{employee.lastName?.[0]}
+                                </div>
+                                <div>
+                                  <div className="font-medium text-gray-900 dark:text-white">
+                                    {employee.firstName} {employee.lastName}
+                                  </div>
+                                  {employee.specialty && (
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                      {employee.specialty}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      <label className="label">Reserva máxima anticipada (días)</label>
-                      <input
-                        type="number"
-                        {...register('maxAdvanceBooking')}
-                        className="input"
-                        min="1"
-                      />
+                  )}
+
+                  {/* Tab: Horarios */}
+                  {activeTab === 'schedule' && (
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Define los días y horarios en que está disponible este servicio
+                      </p>
+
+                      <div className="space-y-3">
+                        {DAYS_OF_WEEK.map((day) => {
+                          const schedule = schedules.find(s => s.dayOfWeek === day.value);
+                          return (
+                            <div
+                              key={day.value}
+                              className={`flex items-center gap-4 p-3 rounded-lg border transition-colors ${
+                                schedule?.isAvailable
+                                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                                  : 'border-gray-200 dark:border-gray-700'
+                              }`}
+                            >
+                              <label className="flex items-center gap-3 cursor-pointer min-w-[120px]">
+                                <input
+                                  type="checkbox"
+                                  checked={schedule?.isAvailable || false}
+                                  onChange={() => toggleDay(day.value)}
+                                  className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600"
+                                />
+                                <span className="font-medium text-gray-900 dark:text-white">
+                                  {day.label}
+                                </span>
+                              </label>
+
+                              {schedule?.isAvailable && (
+                                <div className="flex items-center gap-2 flex-1">
+                                  <input
+                                    type="time"
+                                    value={schedule.startTime}
+                                    onChange={(e) => updateScheduleTime(day.value, 'startTime', e.target.value)}
+                                    className="input py-1.5 text-sm"
+                                  />
+                                  <span className="text-gray-500">a</span>
+                                  <input
+                                    type="time"
+                                    value={schedule.endTime}
+                                    onChange={(e) => updateScheduleTime(day.value, 'endTime', e.target.value)}
+                                    className="input py-1.5 text-sm"
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        {...register('requiresConfirmation')}
-                        className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        Requiere confirmación manual
-                      </span>
-                    </label>
-                  </div>
-
-                  <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
                     <button type="button" onClick={onClose} className="btn-secondary">
                       Cancelar
                     </button>

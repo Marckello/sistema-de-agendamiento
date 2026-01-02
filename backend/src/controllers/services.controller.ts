@@ -150,12 +150,15 @@ export const getServices = asyncHandler(async (req: Request, res: Response) => {
           },
         },
       },
+      schedules: true,
     },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
   });
   
   const result = services.map(service => ({
     ...service,
+    bufferTime: service.bufferAfter,
+    requiresConfirmation: service.requiresConfirm,
     employees: service.employees.map(e => e.user),
   }));
   
@@ -187,6 +190,7 @@ export const getService = asyncHandler(async (req: Request, res: Response) => {
           },
         },
       },
+      schedules: true,
     },
   });
   
@@ -198,6 +202,8 @@ export const getService = asyncHandler(async (req: Request, res: Response) => {
     success: true,
     data: {
       ...service,
+      bufferTime: service.bufferAfter,
+      requiresConfirmation: service.requiresConfirm,
       employees: service.employees.map(e => e.user),
     },
   });
@@ -206,12 +212,14 @@ export const getService = asyncHandler(async (req: Request, res: Response) => {
 // Crear servicio
 export const create = asyncHandler(async (req: Request, res: Response) => {
   const data = createServiceSchema.parse(req.body);
-  const { employeeIds, ...serviceData } = data;
+  const { employeeIds, schedules, bufferTime, requiresConfirmation, ...serviceData } = data;
   
   const service = await prisma.service.create({
     data: {
       tenantId: req.tenant!.id,
       ...serviceData,
+      bufferAfter: bufferTime || serviceData.bufferAfter || 0,
+      requiresConfirm: requiresConfirmation ?? serviceData.requiresConfirm ?? false,
     },
   });
   
@@ -221,6 +229,19 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
       data: employeeIds.map(userId => ({
         userId,
         serviceId: service.id,
+      })),
+    });
+  }
+
+  // Crear horarios del servicio
+  if (schedules && schedules.length > 0) {
+    await prisma.serviceSchedule.createMany({
+      data: schedules.map(s => ({
+        serviceId: service.id,
+        dayOfWeek: s.dayOfWeek,
+        isAvailable: s.isAvailable,
+        startTime: s.startTime,
+        endTime: s.endTime,
       })),
     });
   }
@@ -236,7 +257,7 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 export const update = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const data = updateServiceSchema.parse(req.body);
-  const { employeeIds, ...serviceData } = data;
+  const { employeeIds, schedules, bufferTime, requiresConfirmation, ...serviceData } = data;
   
   const existing = await prisma.service.findFirst({
     where: { id, tenantId: req.tenant!.id },
@@ -248,7 +269,11 @@ export const update = asyncHandler(async (req: Request, res: Response) => {
   
   const service = await prisma.service.update({
     where: { id },
-    data: serviceData,
+    data: {
+      ...serviceData,
+      ...(bufferTime !== undefined && { bufferAfter: bufferTime }),
+      ...(requiresConfirmation !== undefined && { requiresConfirm: requiresConfirmation }),
+    },
   });
   
   // Actualizar empleados si se especificaron
@@ -264,6 +289,27 @@ export const update = asyncHandler(async (req: Request, res: Response) => {
         data: employeeIds.map(userId => ({
           userId,
           serviceId: id,
+        })),
+      });
+    }
+  }
+
+  // Actualizar horarios si se especificaron
+  if (schedules !== undefined) {
+    // Eliminar horarios actuales
+    await prisma.serviceSchedule.deleteMany({
+      where: { serviceId: id },
+    });
+    
+    // Crear nuevos horarios
+    if (schedules.length > 0) {
+      await prisma.serviceSchedule.createMany({
+        data: schedules.map(s => ({
+          serviceId: id,
+          dayOfWeek: s.dayOfWeek,
+          isAvailable: s.isAvailable,
+          startTime: s.startTime,
+          endTime: s.endTime,
         })),
       });
     }

@@ -8,6 +8,7 @@ import settingsRoutes from './settings.routes.js';
 import bookingRoutes from './booking.routes.js';
 import dashboardRoutes from './dashboard.routes.js';
 import publicRoutes from './public.routes.js';
+import chatRoutes from './chat.routes.js';
 import { extractTenant } from '../middleware/tenant.js';
 
 const router = Router();
@@ -31,6 +32,7 @@ router.use('/services', servicesRoutes);
 router.use('/users', usersRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/chat', chatRoutes);
 
 // Health check
 router.get('/health', (req, res) => {

@@ -11,8 +11,11 @@ declare global {
       user?: {
         id: string;
         email: string;
+        firstName: string;
+        lastName: string;
         role: UserRole;
         tenantId: string;
+        canUseAI: boolean;
       };
       tenant?: {
         id: string;
@@ -93,8 +96,11 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
       req.user = {
         id: user.id,
         email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role,
         tenantId: user.tenantId,
+        canUseAI: user.canUseAI,
       };
       
       req.tenant = {
@@ -269,8 +275,11 @@ export async function optionalAuth(req: Request, res: Response, next: NextFuncti
       req.user = {
         id: user.id,
         email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         role: user.role,
         tenantId: user.tenantId,
+        canUseAI: user.canUseAI,
       };
       
       req.tenant = {

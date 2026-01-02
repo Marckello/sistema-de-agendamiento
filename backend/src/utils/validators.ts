@@ -107,6 +107,7 @@ export const createServiceSchema = z.object({
   duration: z.number().min(5, 'La duración mínima es 5 minutos').max(480, 'La duración máxima es 8 horas'),
   bufferBefore: z.number().min(0).optional(),
   bufferAfter: z.number().min(0).optional(),
+  bufferTime: z.number().min(0).optional(),
   price: z.number().min(0, 'El precio no puede ser negativo'),
   depositRequired: z.boolean().optional(),
   depositAmount: z.number().optional(),
@@ -114,10 +115,19 @@ export const createServiceSchema = z.object({
   maxAttendees: z.number().min(1).optional(),
   isPublic: z.boolean().optional(),
   requiresConfirm: z.boolean().optional(),
+  requiresConfirmation: z.boolean().optional(),
   color: z.string().optional(),
   image: z.string().optional(),
   sortOrder: z.number().optional(),
+  maxAdvanceBooking: z.number().min(1).optional(),
+  minAdvanceBooking: z.number().min(0).optional(),
   employeeIds: z.array(z.string().uuid()).optional(),
+  schedules: z.array(z.object({
+    dayOfWeek: z.number().min(0).max(6),
+    isAvailable: z.boolean(),
+    startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido'),
+    endTime: z.string().regex(/^\d{2}:\d{2}$/, 'Formato de hora inválido'),
+  })).optional(),
 });
 
 export const updateServiceSchema = createServiceSchema.partial();

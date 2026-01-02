@@ -12,6 +12,8 @@ export interface User {
   canModify: boolean;
   canDelete: boolean;
   isActive: boolean;
+  specialty?: string;
+  title?: string;
   tenantId: string;
   createdAt: string;
   updatedAt: string;
@@ -122,6 +124,15 @@ export interface ServiceCategory {
   services?: Service[];
 }
 
+export interface ServiceSchedule {
+  id: string;
+  serviceId: string;
+  dayOfWeek: number;
+  isAvailable: boolean;
+  startTime: string;
+  endTime: string;
+}
+
 export interface Service {
   id: string;
   name: string;
@@ -136,6 +147,8 @@ export interface Service {
   minAdvanceBooking: number;
   categoryId?: string;
   category?: ServiceCategory;
+  employees?: User[];
+  schedules?: ServiceSchedule[];
   tenantId: string;
   createdAt: string;
   updatedAt: string;
@@ -153,6 +166,8 @@ export interface CreateServiceData {
   maxAdvanceBooking?: number;
   minAdvanceBooking?: number;
   categoryId?: string;
+  employeeIds?: string[];
+  schedules?: Omit<ServiceSchedule, 'id' | 'serviceId'>[];
 }
 
 // Appointment types

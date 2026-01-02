@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
+import AIChat from '@/components/chat/AIChat';
 
 export default function MainLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -29,6 +30,9 @@ export default function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      {/* AI Chat Floating Widget */}
+      <AIChat />
     </div>
   );
 }
