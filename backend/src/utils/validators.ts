@@ -106,10 +106,21 @@ export const createServiceCategorySchema = z.object({
   sortOrder: z.number().optional(),
 });
 
+// Helper to transform empty strings to undefined
+const emptyStringToUndefined = z.string().transform(val => val === '' ? undefined : val);
+const optionalString = z.union([z.string(), z.undefined()]).transform(val => val === '' ? undefined : val);
+const optionalUuid = z.string().uuid().optional().or(z.literal('')).transform(val => val === '' ? undefined : val);
+
 export const createServiceSchema = z.object({
-  categoryId: z.string().uuid().optional(),
+  categoryId: z.preprocess(
+    val => val === '' || val === null ? undefined : val,
+    z.string().uuid().optional()
+  ),
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
-  description: z.string().optional(),
+  description: z.preprocess(
+    val => val === '' ? undefined : val,
+    z.string().optional()
+  ),
   duration: z.coerce.number().min(5, 'La duración mínima es 5 minutos').max(480, 'La duración máxima es 8 horas'),
   bufferBefore: z.coerce.number().min(0).optional(),
   bufferAfter: z.coerce.number().min(0).optional(),
@@ -123,8 +134,14 @@ export const createServiceSchema = z.object({
   isActive: z.boolean().optional(),
   requiresConfirm: z.boolean().optional(),
   requiresConfirmation: z.boolean().optional(),
-  color: z.string().optional(),
-  image: z.string().optional(),
+  color: z.preprocess(
+    val => val === '' ? undefined : val,
+    z.string().optional()
+  ),
+  image: z.preprocess(
+    val => val === '' ? undefined : val,
+    z.string().optional()
+  ),
   sortOrder: z.coerce.number().optional(),
   maxAdvanceBooking: z.coerce.number().min(1).optional(),
   minAdvanceBooking: z.coerce.number().min(0).optional(),
