@@ -252,7 +252,16 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
   const data = parseResult.data;
   console.log('📤 Datos parseados:', JSON.stringify(data, null, 2));
   
-  const { employeeIds, schedules, bufferTime, requiresConfirmation, ...serviceData } = data;
+  // Extraer campos que no van directo a la BD o que tienen nombres diferentes
+  const { 
+    employeeIds, 
+    schedules, 
+    bufferTime, 
+    requiresConfirmation,
+    maxAdvanceBooking,  // Este campo no existe en el modelo Prisma
+    minAdvanceBooking,  // Este campo no existe en el modelo Prisma
+    ...serviceData 
+  } = data;
   
   const service = await prisma.service.create({
     data: {
@@ -297,7 +306,15 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 export const update = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
   const data = updateServiceSchema.parse(req.body);
-  const { employeeIds, schedules, bufferTime, requiresConfirmation, ...serviceData } = data;
+  const { 
+    employeeIds, 
+    schedules, 
+    bufferTime, 
+    requiresConfirmation,
+    maxAdvanceBooking,  // Este campo no existe en el modelo Prisma
+    minAdvanceBooking,  // Este campo no existe en el modelo Prisma
+    ...serviceData 
+  } = data;
   
   const existing = await prisma.service.findFirst({
     where: { id, tenantId: req.tenant!.id },
