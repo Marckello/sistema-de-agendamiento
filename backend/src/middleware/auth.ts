@@ -86,10 +86,19 @@ export async function authenticate(req: Request, res: Response, next: NextFuncti
         },
       });
       
-      if (!user || !user.tenant.isActive) {
+      // SUPER_ADMIN puede acceder aunque el tenant esté inactivo
+      if (!user) {
         return res.status(401).json({ 
           success: false, 
-          message: 'Usuario o cuenta no válida' 
+          message: 'Usuario no válido' 
+        });
+      }
+      
+      // Para usuarios normales, verificar que el tenant esté activo
+      if (user.role !== UserRole.SUPER_ADMIN && !user.tenant.isActive) {
+        return res.status(401).json({ 
+          success: false, 
+          message: 'Cuenta no activa' 
         });
       }
       
