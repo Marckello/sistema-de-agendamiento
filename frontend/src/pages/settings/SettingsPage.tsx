@@ -304,6 +304,7 @@ function BookingSettings({ settings }: { settings?: any }) {
       requireConfirmation: false,
       maxAdvanceBooking: 30,
       minAdvanceBooking: 1,
+      cancellationPolicy: '',
     },
   });
 
@@ -315,6 +316,7 @@ function BookingSettings({ settings }: { settings?: any }) {
         requireConfirmation: settings.requireConfirmation ?? false,
         maxAdvanceBooking: settings.maxAdvanceBooking ?? 30,
         minAdvanceBooking: settings.minAdvanceBooking ?? 1,
+        cancellationPolicy: settings.cancellationPolicy ?? '',
       });
     }
   }, [settings, reset]);
