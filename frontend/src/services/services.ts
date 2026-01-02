@@ -4,7 +4,6 @@ import {
   ServiceCategory,
   CreateServiceData,
   ApiResponse,
-  PaginatedResponse
 } from '@/types';
 
 export const serviceService = {

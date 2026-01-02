@@ -24,7 +24,7 @@ import {
   BarChart,
   Bar,
 } from 'recharts';
-import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { dashboardService } from '@/services/dashboard';
 import { appointmentService } from '@/services/appointments';
@@ -228,7 +228,7 @@ export default function DashboardPage() {
                       paddingAngle={2}
                       dataKey="value"
                     >
-                      {statusChartData.map((_, index) => (
+                      {statusChartData.map((_: { name: string; value: number }, index: number) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
@@ -248,7 +248,7 @@ export default function DashboardPage() {
             </div>
             {/* Legend */}
             <div className="mt-4 flex flex-wrap justify-center gap-4">
-              {statusChartData.map((entry, index) => (
+              {statusChartData.map((entry: { name: string; value: number }, index: number) => (
                 <div key={entry.name} className="flex items-center">
                   <div
                     className="w-3 h-3 rounded-full mr-2"

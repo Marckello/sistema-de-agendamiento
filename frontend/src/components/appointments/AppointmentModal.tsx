@@ -1,6 +1,6 @@
 import { Fragment, useState, useEffect } from 'react';
 import { Dialog, Transition, Listbox } from '@headlessui/react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -42,8 +42,6 @@ export default function AppointmentModal({
   const {
     register,
     handleSubmit,
-    control,
-    formState: { errors },
   } = useForm<CreateAppointmentData>();
 
   // Fetch clients
@@ -66,7 +64,7 @@ export default function AppointmentModal({
   });
 
   // Fetch available slots when service, employee, and date are selected
-  const { data: slotsData, refetch: refetchSlots } = useQuery({
+  const { data: slotsData } = useQuery({
     queryKey: ['available-slots', selectedEmployee?.id, selectedService?.id, selectedDate],
     queryFn: () =>
       appointmentService.getAvailableSlots(

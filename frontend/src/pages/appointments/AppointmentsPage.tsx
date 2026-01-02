@@ -6,7 +6,6 @@ import { es } from 'date-fns/locale';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
-  FunnelIcon,
   EyeIcon,
   CheckCircleIcon,
   XCircleIcon,

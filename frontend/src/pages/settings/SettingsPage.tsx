@@ -17,7 +17,6 @@ type SettingsTab = 'general' | 'branding' | 'booking' | 'notifications' | 'webho
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
-  const queryClient = useQueryClient();
 
   const { data: settingsData, isLoading } = useQuery({
     queryKey: ['settings'],

@@ -9,8 +9,6 @@ import {
   TrashIcon,
   UserGroupIcon,
   XMarkIcon,
-  ShieldCheckIcon,
-  UserIcon,
 } from '@heroicons/react/24/outline';
 import { userService, CreateUserData } from '@/services/users';
 import { User, UserRole } from '@/types';
