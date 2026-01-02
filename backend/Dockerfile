@@ -1,22 +1,23 @@
 # Backend Dockerfile - CitasPro con WhatsApp
+# Build context: root of repository
 FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Copy package files from backend folder
+COPY backend/package*.json ./
 
 # Install dependencies
 RUN npm ci
 
 # Copy prisma folder
-COPY prisma ./prisma/
+COPY backend/prisma ./prisma/
 
 # Generate Prisma client
 RUN npx prisma generate
 
 # Copy source code
-COPY . .
+COPY backend/ .
 
 # Build TypeScript
 RUN npm run build
@@ -54,13 +55,13 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY backend/package*.json ./
 
 # Install production dependencies
 RUN npm ci --only=production
 
 # Copy prisma folder
-COPY prisma ./prisma/
+COPY backend/prisma ./prisma/
 
 # Generate Prisma client for production
 RUN npx prisma generate
@@ -77,6 +78,9 @@ EXPOSE 4000
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:4000/api/health || exit 1
+
+# Start command - run migrations then start
+CMD npx prisma migrate deploy && npm start
 
 # Start command
 CMD ["npm", "start"]
