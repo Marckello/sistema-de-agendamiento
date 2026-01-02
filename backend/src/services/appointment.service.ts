@@ -192,6 +192,10 @@ export async function getAvailableSlots(
   const dayOfWeek = date.getDay();
   const slots: TimeSlot[] = [];
   
+  console.log(`  📅 [getAvailableSlots] Fecha: ${date.toISOString()}, Día semana: ${dayOfWeek}`);
+  console.log(`  👤 Empleado ID: ${employeeId}`);
+  console.log(`  ⏱️ Duración servicio: ${serviceDuration} min`);
+  
   // 1. Obtener horario del LOCAL (userId = null)
   const businessSchedule = await prisma.workSchedule.findFirst({
     where: {
@@ -201,6 +205,10 @@ export async function getAvailableSlots(
     },
   });
   
+  console.log(`  🏢 Horario negocio (día ${dayOfWeek}):`, businessSchedule ? 
+    `${businessSchedule.startTime} - ${businessSchedule.endTime}, trabajando: ${businessSchedule.isWorking}` : 
+    'NO CONFIGURADO');
+  
   // 2. Obtener horario del EMPLEADO
   const employeeSchedule = await prisma.workSchedule.findFirst({
     where: {
@@ -209,6 +217,10 @@ export async function getAvailableSlots(
       dayOfWeek,
     },
   });
+  
+  console.log(`  👷 Horario empleado (día ${dayOfWeek}):`, employeeSchedule ? 
+    `${employeeSchedule.startTime} - ${employeeSchedule.endTime}, trabajando: ${employeeSchedule.isWorking}` : 
+    'NO CONFIGURADO');
   
   // Definir rango de horas a mostrar (usar horario del local, o default 08:00-20:00)
   let displayStart = 8 * 60;  // 08:00

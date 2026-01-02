@@ -280,24 +280,45 @@ export const cancel = asyncHandler(async (req: Request, res: Response) => {
 
 // Verificar disponibilidad
 export const checkAvailabilityHandler = asyncHandler(async (req: Request, res: Response) => {
+  console.log('');
+  console.log('='.repeat(80));
+  console.log('🕐 [AVAILABILITY CHECK] Consultando disponibilidad');
+  console.log('='.repeat(80));
+  console.log('📥 Query params:', req.query);
+  
   const data = checkAvailabilitySchema.parse(req.query);
+  console.log('✅ Datos parseados:', data);
   
   // Obtener servicio para duración
   const service = await prisma.service.findFirst({
     where: { id: data.serviceId, tenantId: req.tenant!.id },
   });
   
+  console.log('🔧 Servicio encontrado:', service ? { id: service.id, name: service.name, duration: service.duration } : 'NO ENCONTRADO');
+  
   if (!service) {
     throw new NotFoundError('Servicio');
   }
+  
+  const totalDuration = service.duration + service.bufferBefore + service.bufferAfter;
+  console.log(`⏱️ Duración total: ${totalDuration} min (servicio: ${service.duration}, bufferBefore: ${service.bufferBefore}, bufferAfter: ${service.bufferAfter})`);
   
   const slots = await getAvailableSlots(
     req.tenant!.id,
     data.employeeId,
     new Date(data.date),
-    service.duration + service.bufferBefore + service.bufferAfter,
+    totalDuration,
     30 // Intervalo de 30 minutos
   );
+  
+  console.log(`📊 Slots generados: ${slots.length}`);
+  console.log('🟢 Slots disponibles:', slots.filter(s => s.available).length);
+  console.log('🔴 Slots NO disponibles:', slots.filter(s => !s.available).length);
+  if (slots.length === 0) {
+    console.log('⚠️ ADVERTENCIA: No se generaron slots. Verificar horarios del negocio y empleado.');
+  }
+  console.log('='.repeat(80));
+  console.log('');
   
   res.json({
     success: true,
