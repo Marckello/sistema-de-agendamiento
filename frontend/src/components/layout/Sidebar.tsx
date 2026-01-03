@@ -41,8 +41,9 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
     staleTime: 5 * 60 * 1000, // Cache por 5 minutos
   });
   
-  const tenantLogo = settingsData?.data?.logo;
-  const tenantName = settingsData?.data?.name || 'CitasPro';
+  const tenantSettings = settingsData?.data as any;
+  const tenantLogo = tenantSettings?.logo;
+  const tenantName = tenantSettings?.name || 'CitasPro';
 
   const filteredNavigation = navigation.filter((item) => {
     if (!item.roles) return true;

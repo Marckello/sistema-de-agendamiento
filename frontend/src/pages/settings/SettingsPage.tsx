@@ -223,7 +223,7 @@ function BrandingSettings({ settings }: { settings?: any }) {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { register, handleSubmit, reset, formState: { isDirty } } = useForm({
+  const { register, handleSubmit, reset } = useForm({
     defaultValues: {
       primaryColor: '#3B82F6',
       secondaryColor: '#10B981',
