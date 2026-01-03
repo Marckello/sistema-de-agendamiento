@@ -1,5 +1,7 @@
 import { NavLink, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { settingsService } from '@/services/settings';
 import {
   HomeIcon,
   CalendarDaysIcon,
@@ -32,6 +34,16 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const { user } = useAuth();
   const location = useLocation();
 
+  // Obtener settings del tenant para logo y nombre
+  const { data: settingsData } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => settingsService.getSettings(),
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
+  });
+  
+  const tenantLogo = settingsData?.data?.logo;
+  const tenantName = settingsData?.data?.name || 'CitasPro';
+
   const filteredNavigation = navigation.filter((item) => {
     if (!item.roles) return true;
     return user && item.roles.includes(user.role);
@@ -47,10 +59,14 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       >
         <div className="flex items-center justify-between h-16 px-5 border-b border-dark-800/50">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
-              <SparklesIcon className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-lg font-bold gradient-text">CitasPro</span>
+            {tenantLogo ? (
+              <img src={tenantLogo} alt={tenantName} className="w-8 h-8 rounded-xl object-contain" />
+            ) : (
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
+                <SparklesIcon className="w-5 h-5 text-white" />
+              </div>
+            )}
+            <span className="text-lg font-bold gradient-text">{tenantName}</span>
           </div>
           <button
             onClick={onClose}
@@ -86,11 +102,15 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
           {/* Logo */}
           <div className="flex items-center h-16 px-6 border-b border-dark-800">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center">
-                <SparklesIcon className="w-6 h-6 text-dark-950" />
-              </div>
+              {tenantLogo ? (
+                <img src={tenantLogo} alt={tenantName} className="w-10 h-10 rounded-xl object-contain" />
+              ) : (
+                <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center">
+                  <SparklesIcon className="w-6 h-6 text-dark-950" />
+                </div>
+              )}
               <div>
-                <span className="text-xl font-bold text-white">CitasPro</span>
+                <span className="text-xl font-bold text-white">{tenantName}</span>
                 <p className="text-[10px] text-gray-600 -mt-0.5">by Serrano Marketing</p>
               </div>
             </div>

@@ -342,12 +342,15 @@ function BrandingSettings({ settings }: { settings?: any }) {
               </div>
             </div>
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Los colores se aplicarán en la página de reservas públicas.
+          </p>
         </div>
 
         <div className="card-footer flex justify-end">
           <button
             type="submit"
-            disabled={!isDirty || mutation.isPending}
+            disabled={mutation.isPending}
             className="btn-primary"
           >
             {mutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
