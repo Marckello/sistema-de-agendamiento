@@ -1,7 +1,7 @@
 # CitasPro - Documentación Completa del Proyecto
 
 **Última actualización:** 2 de Enero de 2026  
-**Versión:** 1.2.0  
+**Versión:** 1.3.0  
 **Cliente:** Serrano Marketing  
 **Repositorio:** https://github.com/Marckello/sistema-de-agendamiento.git
 
@@ -856,6 +856,38 @@ UPDATE users SET "canUseAI" = true WHERE email = 'usuario@email.com';
 **Problema**: `canModify` y `canDelete` faltaban en el modelo User.
 **Solución**: Agregados a schema.prisma y migración aplicada.
 
+### 6. Error 400 al crear servicios
+**Problema**: Los campos `maxAdvanceBooking` y `minAdvanceBooking` se enviaban al backend pero no existen en el schema de Prisma.
+**Solución**: Extraer estos campos del objeto antes de pasarlo a Prisma create/update en `services.controller.ts`.
+
+### 7. Slots de citas no aparecían en el modal
+**Problema**: El frontend leía `slotsData.data` (un objeto) en lugar de `slotsData.data.slots` (el array de slots).
+**Solución**: Corregir el tipo de respuesta en `appointments.ts` y la extracción en `AppointmentModal.tsx`.
+
+### 8. Formulario de edición de usuarios no cargaba datos
+**Problema**: `useForm` con `defaultValues` solo se evalúa en el primer render, no cuando cambia el usuario seleccionado.
+**Solución**: Agregar `useEffect` con `reset()` para cargar los datos cuando cambia la prop del usuario.
+
+### 9. Error 404 en rutas de configuración
+**Problema**: El frontend llamaba a `/settings/general`, `/settings/branding`, etc., pero el backend solo tenía `PUT /settings/`.
+**Solución**: Agregar rutas específicas en `settings.routes.ts`: `/general`, `/branding`, `/booking`, `/notifications`.
+
+### 10. Datos de configuración no persistían en el formulario
+**Problema**: Igual que usuarios, los componentes de configuración no cargaban los datos existentes.
+**Solución**: Agregar `useEffect` con `reset()` a GeneralSettings, BrandingSettings, BookingSettings y NotificationSettings.
+
+### 11. Subida de logo como archivo
+**Problema**: El logo se configuraba como URL pero se necesitaba subir archivos.
+**Solución**: 
+- Agregar endpoint `POST /settings/logo` con multer
+- Validar solo PNG/JPG, máximo 2MB
+- Convertir a Base64 data URL para almacenar
+- UI de upload con preview en BrandingSettings
+
+### 12. Logo no se mostraba en el Sidebar
+**Problema**: El Sidebar usaba un logo estático en lugar del logo del tenant.
+**Solución**: Agregar query para obtener settings del tenant y mostrar logo/nombre dinámicamente.
+
 ---
 
 ## 💻 Comandos Útiles
@@ -983,8 +1015,13 @@ Ver **EASYPANEL.md** para guía detallada.
 - Asistente de IA con OpenAI
 - Sistema de permisos (canModify, canDelete, canUseAI)
 - Diseño Blitzit completo
+- **Configuración de branding** (logo, nombre, colores)
+- **Subida de logo** con validación PNG/JPG, 2MB max
+- **Logo dinámico en Sidebar** desde configuración del tenant
+- **Rutas de configuración** específicas (general, branding, booking, notifications)
 
 🔄 **Pendiente:**
+- [ ] Aplicar colores personalizados a la UI dinámicamente
 - [ ] Notificaciones push
 - [ ] Recordatorios WhatsApp
 - [ ] Pagos online
@@ -995,7 +1032,36 @@ Ver **EASYPANEL.md** para guía detallada.
 
 ## 🚨 ÚLTIMA SESIÓN - Pasos para Retomar
 
-### Problema al Cerrar
+### Lo Último que se Hizo (2 Enero 2026 - Sesión Vespertina)
+1. ✅ Corregido error 400 al crear servicios (campos no existentes en Prisma)
+2. ✅ Corregido slots de citas que no aparecían (extracción incorrecta de respuesta)
+3. ✅ Formulario de edición de usuarios ahora carga datos correctamente
+4. ✅ Agregadas rutas de configuración faltantes
+5. ✅ Todos los formularios de configuración ahora persisten datos
+6. ✅ Implementada subida de logo con validación
+7. ✅ Logo del tenant se muestra en el Sidebar
+8. ✅ Corregidos errores TypeScript para despliegue
+
+### Cambios Técnicos Importantes
+
+| Archivo | Cambio |
+|---------|--------|
+| `backend/src/controllers/services.controller.ts` | Extrae campos no-DB antes de Prisma |
+| `backend/src/routes/settings.routes.ts` | Agregado multer, rutas /general, /branding, etc. |
+| `backend/src/controllers/settings.controller.ts` | Nuevo handler `uploadLogo` con Base64 |
+| `frontend/src/services/appointments.ts` | Tipo de respuesta corregido para slots |
+| `frontend/src/components/appointments/AppointmentModal.tsx` | Extracción `slotsData.data.slots` |
+| `frontend/src/pages/users/UsersPage.tsx` | useEffect + reset() para edición |
+| `frontend/src/pages/settings/SettingsPage.tsx` | useEffect + reset() en todos los componentes, UI de upload |
+| `frontend/src/components/layout/Sidebar.tsx` | Query para settings, logo dinámico |
+
+### Para Continuar
+El sistema está desplegado en EasyPanel. Verificar que:
+1. El logo aparezca en la esquina superior izquierda del Sidebar
+2. La configuración de branding se guarde correctamente
+3. Los colores elegidos se almacenen (aplicación visual pendiente)
+
+### Problema Anterior
 Docker Desktop crasheó y no permite iniciar la base de datos PostgreSQL.
 
 ### Opciones para Continuar
