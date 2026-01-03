@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
@@ -219,9 +219,12 @@ function GeneralSettings({ settings }: { settings?: any }) {
 // Branding Settings
 function BrandingSettings({ settings }: { settings?: any }) {
   const queryClient = useQueryClient();
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const { register, handleSubmit, reset, formState: { isDirty } } = useForm({
     defaultValues: {
-      logo: '',
       primaryColor: '#3B82F6',
       secondaryColor: '#10B981',
     },
@@ -231,10 +234,10 @@ function BrandingSettings({ settings }: { settings?: any }) {
   useEffect(() => {
     if (settings) {
       reset({
-        logo: settings.logo || '',
         primaryColor: settings.primaryColor || '#3B82F6',
         secondaryColor: settings.secondaryColor || '#10B981',
       });
+      setLogoPreview(settings.logo || null);
     }
   }, [settings, reset]);
 
@@ -249,6 +252,35 @@ function BrandingSettings({ settings }: { settings?: any }) {
     },
   });
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tamaño (2MB máximo)
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('El archivo debe ser menor a 2MB');
+      return;
+    }
+
+    // Validar tipo
+    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type)) {
+      toast.error('Solo se permiten archivos PNG o JPG');
+      return;
+    }
+
+    setIsUploadingLogo(true);
+    try {
+      const result = await settingsService.uploadLogo(file);
+      setLogoPreview(result.data.url);
+      toast.success('Logo actualizado');
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Error al subir el logo');
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
+
   return (
     <div className="card">
       <div className="card-header">
@@ -258,9 +290,40 @@ function BrandingSettings({ settings }: { settings?: any }) {
       </div>
       <form onSubmit={handleSubmit((data) => mutation.mutate(data as TenantSettings['branding']))}>
         <div className="card-body space-y-4">
+          {/* Logo Upload */}
           <div>
-            <label className="label">Logo (URL)</label>
-            <input {...register('logo')} className="input" placeholder="https://ejemplo.com/logo.png" />
+            <label className="label">Logo del negocio</label>
+            <div className="flex items-start gap-4">
+              {/* Preview */}
+              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center overflow-hidden">
+                {logoPreview ? (
+                  <img src={logoPreview} alt="Logo" className="w-full h-full object-contain" />
+                ) : (
+                  <span className="text-gray-400 text-xs text-center px-2">Sin logo</span>
+                )}
+              </div>
+              {/* Upload button */}
+              <div className="flex-1">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".png,.jpg,.jpeg"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingLogo}
+                  className="btn-secondary mb-2"
+                >
+                  {isUploadingLogo ? 'Subiendo...' : 'Subir logo'}
+                </button>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Formatos: PNG, JPG. Máximo 2MB.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -1,9 +1,27 @@
 import { Router } from 'express';
+import multer from 'multer';
 import * as settingsController from '../controllers/settings.controller.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 import { UserRole } from '@prisma/client';
 
 const router = Router();
+
+// Configurar multer para upload de logo
+const logoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2MB máximo
+  },
+  fileFilter: (_req, file, cb) => {
+    // Solo permitir PNG y JPG
+    const allowedMimes = ['image/png', 'image/jpeg', 'image/jpg'];
+    if (allowedMimes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos PNG o JPG'));
+    }
+  },
+});
 
 // Todas las rutas requieren autenticación
 router.use(authenticate);
@@ -11,6 +29,9 @@ router.use(authenticate);
 // Configuración general (solo Admin y Super Admin)
 router.get('/', settingsController.getSettings);
 router.put('/', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), settingsController.updateSettings);
+
+// Upload de logo (Admin y Super Admin)
+router.post('/logo', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), logoUpload.single('logo'), settingsController.uploadLogo);
 
 // Rutas específicas para actualizar secciones de configuración
 router.put('/general', requireRole(UserRole.SUPER_ADMIN, UserRole.ADMIN), settingsController.updateSettings);

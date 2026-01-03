@@ -71,6 +71,33 @@ export const updateSettings = asyncHandler(async (req: Request, res: Response) =
   });
 });
 
+// Subir logo del tenant
+export const uploadLogo = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.file) {
+    return res.status(400).json({
+      success: false,
+      message: 'No se ha enviado ningún archivo',
+    });
+  }
+
+  // Convertir a Base64 data URL para almacenar directamente
+  const base64 = req.file.buffer.toString('base64');
+  const mimeType = req.file.mimetype;
+  const dataUrl = `data:${mimeType};base64,${base64}`;
+
+  // Actualizar el logo del tenant
+  const tenant = await prisma.tenant.update({
+    where: { id: req.tenant!.id },
+    data: { logo: dataUrl },
+  });
+
+  res.json({
+    success: true,
+    message: 'Logo actualizado exitosamente',
+    data: { url: dataUrl },
+  });
+});
+
 // ==================== HORARIOS DE TRABAJO ====================
 
 // Obtener horarios del NEGOCIO (userId = null)
