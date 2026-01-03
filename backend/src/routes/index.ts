@@ -11,12 +11,16 @@ import publicRoutes from './public.routes.js';
 import chatRoutes from './chat.routes.js';
 import whatsappRoutes from './whatsapp.routes.js';
 import adminRoutes from './admin.routes.js';
+import verificationRoutes from './verification.routes.js';
 import { extractTenant } from '../middleware/tenant.js';
 
 const router = Router();
 
 // Rutas públicas (sin autenticación, antes del middleware de tenant)
 router.use('/public', publicRoutes);
+
+// Rutas de verificación (sin tenant)
+router.use('/verification', verificationRoutes);
 
 // Middleware para extraer tenant
 router.use(extractTenant);

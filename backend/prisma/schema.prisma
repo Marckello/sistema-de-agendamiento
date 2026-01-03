@@ -47,6 +47,44 @@ model Plan {
 }
 
 // =============================================
+// VERIFICACIÓN DE REGISTRO
+// =============================================
+
+model VerificationCode {
+  id        String   @id @default(uuid())
+  
+  // A quién pertenece (puede ser un registro pendiente o un tenant existente)
+  email     String
+  phone     String?
+  
+  // Códigos de verificación
+  emailCode     String?
+  phoneCode     String?
+  
+  // Estado de verificación
+  emailVerified Boolean @default(false)
+  phoneVerified Boolean @default(false)
+  
+  // Datos del registro pendiente (JSON serializado)
+  registrationData String? @db.Text
+  
+  // Control de expiración y reintentos
+  emailCodeExpiresAt DateTime?
+  phoneCodeExpiresAt DateTime?
+  emailAttempts      Int      @default(0)
+  phoneAttempts      Int      @default(0)
+  
+  // Firebase verification ID para teléfono
+  firebaseVerificationId String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@unique([email])
+  @@map("verification_codes")
+}
+
+// =============================================
 // MODELOS MULTI-TENANT
 // =============================================
 
@@ -59,6 +97,10 @@ model Tenant {
   phone       String?
   description String?
   logo        String?
+  
+  // Estado de verificación del tenant
+  emailVerified Boolean @default(false)
+  phoneVerified Boolean @default(false)
   
   // Dirección
   address   String?
