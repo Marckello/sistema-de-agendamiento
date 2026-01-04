@@ -251,6 +251,14 @@ export const updateTenantSettingsSchema = z.object({
   smtpFrom: z.string().email().optional().or(z.literal('')),
   smtpFromName: z.string().optional().or(z.literal('')),
   smtpEnabled: z.boolean().optional(),
+  // Social Media
+  website: z.string().url().optional().or(z.literal('')).or(z.null()),
+  facebook: z.string().url().optional().or(z.literal('')).or(z.null()),
+  instagram: z.string().url().optional().or(z.literal('')).or(z.null()),
+  twitter: z.string().url().optional().or(z.literal('')).or(z.null()),
+  tiktok: z.string().url().optional().or(z.literal('')).or(z.null()),
+  linkedin: z.string().url().optional().or(z.literal('')).or(z.null()),
+  whatsapp: z.string().optional().or(z.literal('')).or(z.null()),
 });
 
 // Notification template schema

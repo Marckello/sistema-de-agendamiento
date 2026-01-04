@@ -3,6 +3,7 @@ import {
   getTenantBySubdomain,
   getPublicServices,
   getPublicEmployees,
+  getPublicExtras,
   getAvailability,
   createPublicAppointment,
 } from '../controllers/public.controller';
@@ -17,6 +18,9 @@ router.get('/services', getPublicServices);
 
 // Get employees for a service
 router.get('/employees', getPublicEmployees);
+
+// Get extras
+router.get('/extras', getPublicExtras);
 
 // Get available time slots
 router.get('/availability', getAvailability);

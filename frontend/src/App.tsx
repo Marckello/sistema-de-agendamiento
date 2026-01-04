@@ -40,7 +40,7 @@ import SettingsPage from '@/pages/settings/SettingsPage';
 import ProfilePage from '@/pages/profile/ProfilePage';
 
 // Public Booking
-import PublicBookingPage from '@/pages/booking/PublicBookingPage';
+import PublicBookingPage from '@/pages/booking/PublicBookingPageNew';
 
 // Admin Pages (Platform Admin only - Independent)
 import AdminDashboard from '@/pages/admin/AdminDashboard';

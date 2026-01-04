@@ -120,6 +120,15 @@ model Tenant {
   primaryColor   String @default("#3B82F6")
   secondaryColor String @default("#1E40AF")
   
+  // Redes Sociales
+  website       String?
+  facebook      String?
+  instagram     String?
+  twitter       String?
+  tiktok        String?
+  linkedin      String?
+  whatsapp      String?  // Número de WhatsApp para contacto
+  
   // Webhook para n8n
   webhookUrl    String?
   webhookSecret String?

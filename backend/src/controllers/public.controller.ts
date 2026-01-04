@@ -34,12 +34,26 @@ export const getTenantBySubdomain = async (
     res.json({
       success: true,
       data: {
+        id: tenant.id,
         name: tenant.name,
+        slug: tenant.slug,
         subdomain: tenant.slug,
         logo: tenant.logo,
+        description: tenant.description,
         primaryColor: tenant.primaryColor || '#3B82F6',
+        secondaryColor: tenant.secondaryColor || '#059669',
         address: tenant.address || '',
+        city: tenant.city || '',
+        state: tenant.state || '',
         phone: tenant.phone || '',
+        email: tenant.email || '',
+        website: tenant.website || null,
+        facebook: tenant.facebook || null,
+        instagram: tenant.instagram || null,
+        twitter: tenant.twitter || null,
+        tiktok: tenant.tiktok || null,
+        linkedin: tenant.linkedin || null,
+        whatsapp: tenant.whatsapp || null,
       },
     });
   } catch (error) {
@@ -81,15 +95,39 @@ export const getPublicServices = async (
             color: true,
           },
         },
+        employees: {
+          where: {
+            user: {
+              isActive: true,
+            },
+          },
+          select: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true,
+                title: true,
+              },
+            },
+          },
+        },
       },
       orderBy: [
         { name: 'asc' },
       ],
     });
 
+    // Transform to include employees at service level
+    const transformedServices = services.map((service) => ({
+      ...service,
+      employees: service.employees.map((e) => e.user),
+    }));
+
     res.json({
       success: true,
-      data: services,
+      data: transformedServices,
     });
   } catch (error) {
     next(error);
@@ -135,6 +173,50 @@ export const getPublicEmployees = async (
     res.json({
       success: true,
       data: employees,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get public extras for a tenant
+export const getPublicExtras = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const slug = req.headers['x-tenant-subdomain'] as string || req.headers['x-tenant-slug'] as string;
+
+    if (!slug) {
+      throw new AppError('Subdomain required', 400);
+    }
+
+    const tenant = await prisma.tenant.findFirst({
+      where: { slug, isActive: true },
+    });
+
+    if (!tenant) {
+      throw new AppError('Business not found', 404);
+    }
+
+    const extras = await prisma.extra.findMany({
+      where: {
+        tenantId: tenant.id,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        description: true,
+      },
+      orderBy: { sortOrder: 'asc' },
+    });
+
+    res.json({
+      success: true,
+      data: extras,
     });
   } catch (error) {
     next(error);
@@ -263,7 +345,7 @@ export const createPublicAppointment = async (
 ) => {
   try {
     const slug = req.headers['x-tenant-subdomain'] as string || req.headers['x-tenant-slug'] as string;
-    const { serviceId, employeeId, date, time, client } = req.body;
+    const { serviceId, employeeId, date, time, client, extras = [] } = req.body;
 
     if (!slug) {
       throw new AppError('Subdomain required', 400);
@@ -337,31 +419,84 @@ export const createPublicAppointment = async (
     const startTimeStr = format(startTimeDate, 'HH:mm');
     const endTimeStr = format(endTimeDate, 'HH:mm');
 
-    // Create appointment
-    const appointment = await prisma.appointment.create({
-      data: {
-        tenantId: tenant.id,
-        clientId: existingClient.id,
-        employeeId: employee.id,
-        serviceId: service.id,
-        date: appointmentDate,
-        startTime: startTimeStr,
-        endTime: endTimeStr,
-        duration: service.duration,
-        price: service.price,
-        status: 'PENDING',
-        notes: client.notes || null,
-        source: 'ONLINE',
-      },
-      include: {
-        service: true,
-        employee: {
-          select: {
-            firstName: true,
-            lastName: true,
+    // Calculate extras price
+    let extrasTotal = 0;
+    const extrasWithPrices: { id: string; quantity: number; unitPrice: number; total: number }[] = [];
+    
+    if (extras && extras.length > 0) {
+      const extraIds = extras.map((e: { id: string }) => e.id);
+      const extraRecords = await prisma.extra.findMany({
+        where: {
+          id: { in: extraIds },
+          tenantId: tenant.id,
+          isActive: true,
+        },
+      });
+      
+      for (const selectedExtra of extras) {
+        const extraRecord = extraRecords.find((e) => e.id === selectedExtra.id);
+        if (extraRecord) {
+          const quantity = selectedExtra.quantity || 1;
+          extrasTotal += Number(extraRecord.price) * quantity;
+          extrasWithPrices.push({
+            id: extraRecord.id,
+            quantity,
+            unitPrice: Number(extraRecord.price),
+            total: Number(extraRecord.price) * quantity,
+          });
+        }
+      }
+    }
+
+    // Create appointment with transaction
+    const appointment = await prisma.$transaction(async (tx) => {
+      const apt = await tx.appointment.create({
+        data: {
+          tenantId: tenant.id,
+          clientId: existingClient!.id,
+          employeeId: employee.id,
+          serviceId: service.id,
+          date: appointmentDate,
+          startTime: startTimeStr,
+          endTime: endTimeStr,
+          duration: service.duration,
+          price: Number(service.price) + extrasTotal,
+          status: 'PENDING',
+          notes: client.notes || null,
+          source: 'ONLINE',
+        },
+      });
+
+      // Create appointment extras
+      if (extrasWithPrices.length > 0) {
+        await tx.appointmentExtra.createMany({
+          data: extrasWithPrices.map((extra) => ({
+            appointmentId: apt.id,
+            extraId: extra.id,
+            quantity: extra.quantity,
+            unitPrice: extra.unitPrice,
+            total: extra.total,
+          })),
+        });
+      }
+
+      return tx.appointment.findUnique({
+        where: { id: apt.id },
+        include: {
+          service: true,
+          employee: {
+            select: {
+              firstName: true,
+              lastName: true,
+            },
+          },
+          extras: {
+            include: {
+              extra: true,
+            },
           },
         },
-      },
+      });
     });
 
     res.status(201).json({

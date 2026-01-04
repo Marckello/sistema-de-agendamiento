@@ -9,12 +9,13 @@ import {
   BellIcon,
   ClockIcon,
   ChatBubbleOvalLeftEllipsisIcon,
+  GlobeAltIcon,
 } from '@heroicons/react/24/outline';
 import { settingsService } from '@/services/settings';
 import { TenantSettings } from '@/types';
 import WhatsAppSettings from '@/components/settings/WhatsAppSettings';
 
-type SettingsTab = 'general' | 'branding' | 'booking' | 'notifications' | 'schedule' | 'whatsapp';
+type SettingsTab = 'general' | 'branding' | 'social' | 'booking' | 'notifications' | 'schedule' | 'whatsapp';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -29,6 +30,7 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'general' as const, label: 'General', icon: BuildingStorefrontIcon },
     { id: 'branding' as const, label: 'Marca', icon: PaintBrushIcon },
+    { id: 'social' as const, label: 'Redes Sociales', icon: GlobeAltIcon },
     { id: 'booking' as const, label: 'Reservas', icon: CalendarIcon },
     { id: 'notifications' as const, label: 'Notificaciones', icon: BellIcon },
     { id: 'schedule' as const, label: 'Horarios', icon: ClockIcon },
@@ -78,6 +80,7 @@ export default function SettingsPage() {
             <>
               {activeTab === 'general' && <GeneralSettings settings={settings} />}
               {activeTab === 'branding' && <BrandingSettings settings={settings} />}
+              {activeTab === 'social' && <SocialSettings settings={settings} />}
               {activeTab === 'booking' && <BookingSettings settings={settings} />}
               {activeTab === 'notifications' && <NotificationSettings settings={settings} />}
               {activeTab === 'schedule' && <ScheduleSettings />}
@@ -690,6 +693,149 @@ function ScheduleSettings() {
           {mutation.isPending ? 'Guardando...' : 'Guardar Horarios'}
         </button>
       </div>
+    </div>
+  );
+}
+
+// Social Settings
+function SocialSettings({ settings }: { settings?: any }) {
+  const queryClient = useQueryClient();
+  const { register, handleSubmit, reset, formState: { isDirty } } = useForm({
+    defaultValues: {
+      website: '',
+      facebook: '',
+      instagram: '',
+      twitter: '',
+      tiktok: '',
+      linkedin: '',
+      whatsapp: '',
+    },
+  });
+
+  useEffect(() => {
+    if (settings) {
+      reset({
+        website: settings.website || '',
+        facebook: settings.facebook || '',
+        instagram: settings.instagram || '',
+        twitter: settings.twitter || '',
+        tiktok: settings.tiktok || '',
+        linkedin: settings.linkedin || '',
+        whatsapp: settings.whatsapp || '',
+      });
+    }
+  }, [settings, reset]);
+
+  const mutation = useMutation({
+    mutationFn: (data: any) => settingsService.updateGeneral(data),
+    onSuccess: () => {
+      toast.success('Redes sociales actualizadas');
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Error al guardar');
+    },
+  });
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Redes Sociales y Web
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Estos enlaces aparecerán en tu página pública de reservas
+        </p>
+      </div>
+      <form onSubmit={handleSubmit((data) => mutation.mutate(data))}>
+        <div className="card-body space-y-4">
+          <div>
+            <label className="label">Sitio Web</label>
+            <input 
+              type="url"
+              {...register('website')} 
+              className="input" 
+              placeholder="https://www.minegocio.com"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Facebook</label>
+              <input 
+                type="url"
+                {...register('facebook')} 
+                className="input" 
+                placeholder="https://facebook.com/minegocio"
+              />
+            </div>
+            <div>
+              <label className="label">Instagram</label>
+              <input 
+                type="url"
+                {...register('instagram')} 
+                className="input" 
+                placeholder="https://instagram.com/minegocio"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">Twitter / X</label>
+              <input 
+                type="url"
+                {...register('twitter')} 
+                className="input" 
+                placeholder="https://x.com/minegocio"
+              />
+            </div>
+            <div>
+              <label className="label">TikTok</label>
+              <input 
+                type="url"
+                {...register('tiktok')} 
+                className="input" 
+                placeholder="https://tiktok.com/@minegocio"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="label">LinkedIn</label>
+              <input 
+                type="url"
+                {...register('linkedin')} 
+                className="input" 
+                placeholder="https://linkedin.com/company/minegocio"
+              />
+            </div>
+            <div>
+              <label className="label">WhatsApp (número)</label>
+              <input 
+                type="text"
+                {...register('whatsapp')} 
+                className="input" 
+                placeholder="+52 55 1234 5678"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Número con código de país para enlace de WhatsApp
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="card-footer flex justify-end">
+          <button
+            type="submit"
+            disabled={!isDirty || mutation.isPending}
+            className="btn-primary"
+          >
+            {mutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
