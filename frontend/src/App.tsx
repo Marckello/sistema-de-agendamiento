@@ -69,7 +69,7 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   const hasToken = !!localStorage.getItem('accessToken');
 
   if (!hasToken || !isPlatformAdmin) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/control/acceso" replace />;
   }
 
   return <>{children}</>;
@@ -144,8 +144,8 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
 
-      {/* Admin Login - Ruta pública separada */}
-      <Route path="/admin/login" element={<AdminLoginPage />} />
+      {/* Admin Login - Ruta oculta por seguridad */}
+      <Route path="/control/acceso" element={<AdminLoginPage />} />
 
       {/* Admin Routes (Platform Admin only - Independent Layout) */}
       <Route

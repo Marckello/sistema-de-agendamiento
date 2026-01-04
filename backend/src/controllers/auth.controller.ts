@@ -12,7 +12,7 @@ import {
 import { loginSchema, registerTenantSchema, refreshTokenSchema, changePasswordSchema } from '../utils/validators.js';
 import prisma from '../config/database.js';
 import { verifyTurnstileToken } from '../services/turnstile.service.js';
-import config from '../config/index.js';
+import { config } from '../config/index.js';
 
 // Login de usuario de tenant
 export const login = asyncHandler(async (req: Request, res: Response) => {

@@ -1,4 +1,4 @@
-import config from '../config/index.js';
+import { config } from '../config/index.js';
 
 interface TurnstileResponse {
   success: boolean;
@@ -34,7 +34,7 @@ export async function verifyTurnstileToken(token: string, ip?: string): Promise<
       body: formData.toString(),
     });
 
-    const data: TurnstileResponse = await response.json();
+    const data = await response.json() as TurnstileResponse;
     
     if (!data.success) {
       console.warn('Turnstile verification failed:', data['error-codes']);
