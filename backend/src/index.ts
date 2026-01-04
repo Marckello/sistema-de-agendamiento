@@ -35,52 +35,11 @@ app.use(cors({
 // Trust proxy for Cloudflare (to get real IP)
 app.set('trust proxy', 1);
 
-// Rate limiting - General (más permisivo)
-const generalLimiter = rateLimit({
+// Rate limiting MÍNIMO - Solo como última línea de defensa
+// La seguridad principal está en: Cloudflare WAF + Turnstile + JWT + Email Verification
+const emergencyLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
-  max: 300, // 300 requests por minuto
-  message: {
-    success: false,
-    message: 'Demasiadas solicitudes, intenta de nuevo más tarde',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  // Usar la IP real detrás de Cloudflare
-  keyGenerator: (req) => {
-    return req.headers['cf-connecting-ip'] as string || 
-           req.headers['x-forwarded-for'] as string || 
-           req.ip || 
-           'unknown';
-  },
-  // Saltar rate limit para requests exitosos de usuarios autenticados
-  skip: (req) => {
-    // Si tiene token de autorización, ser más permisivo
-    return !!req.headers.authorization;
-  },
-});
-
-// Rate limiting - Estricto para auth (prevenir fuerza bruta)
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10, // 10 intentos de login por 15 minutos
-  message: {
-    success: false,
-    message: 'Demasiados intentos de inicio de sesión. Espera 15 minutos.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => {
-    return req.headers['cf-connecting-ip'] as string || 
-           req.headers['x-forwarded-for'] as string || 
-           req.ip || 
-           'unknown';
-  },
-});
-
-// Rate limiting - Para usuarios autenticados (muy permisivo)
-const authenticatedLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minuto
-  max: 500, // 500 requests por minuto para usuarios autenticados
+  max: 1000, // 1000 requests por minuto - muy permisivo
   message: {
     success: false,
     message: 'Demasiadas solicitudes, intenta de nuevo más tarde',
@@ -93,14 +52,12 @@ const authenticatedLimiter = rateLimit({
            req.ip || 
            'unknown';
   },
+  // Saltar para usuarios autenticados - Cloudflare ya los protege
+  skip: (req) => !!req.headers.authorization,
 });
 
-// Aplicar limitadores
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
-app.use('/api/auth/forgot-password', authLimiter);
-app.use('/api', authenticatedLimiter); // Para rutas autenticadas
-app.use('/api/public', generalLimiter); // Para rutas públicas
+// Solo aplicar a rutas públicas sin autenticación
+app.use('/api/public', emergencyLimiter);
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
