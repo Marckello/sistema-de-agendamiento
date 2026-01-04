@@ -177,10 +177,6 @@ export default function AppointmentModal({
   const employees = extractArray(employeesData?.data, 'users');
   const extras = extractArray(extrasData?.data);
 
-  // Debug: ver qué extras llegan
-  console.log('extrasData:', extrasData);
-  console.log('extras array:', extras);
-
   // Helper para manejar selección de extras
   const toggleExtra = (extraId: string) => {
     setSelectedExtras(prev => {

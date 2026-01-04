@@ -33,6 +33,7 @@ export default function ExtrasPage() {
     onSuccess: (data) => {
       toast.success(data.message || 'Extra eliminado');
       queryClient.invalidateQueries({ queryKey: ['extras'] });
+      queryClient.invalidateQueries({ queryKey: ['extras-active'] });
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Error al eliminar');
@@ -44,6 +45,7 @@ export default function ExtrasPage() {
     onSuccess: () => {
       toast.success('Estado actualizado');
       queryClient.invalidateQueries({ queryKey: ['extras'] });
+      queryClient.invalidateQueries({ queryKey: ['extras-active'] });
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.message || 'Error al actualizar');
@@ -236,6 +238,7 @@ function ExtraModal({ isOpen, onClose, extra }: ExtraModalProps) {
     onSuccess: () => {
       toast.success('Extra creado exitosamente');
       queryClient.invalidateQueries({ queryKey: ['extras'] });
+      queryClient.invalidateQueries({ queryKey: ['extras-active'] });
       onClose();
       reset();
     },
@@ -249,6 +252,7 @@ function ExtraModal({ isOpen, onClose, extra }: ExtraModalProps) {
     onSuccess: () => {
       toast.success('Extra actualizado exitosamente');
       queryClient.invalidateQueries({ queryKey: ['extras'] });
+      queryClient.invalidateQueries({ queryKey: ['extras-active'] });
       onClose();
       reset();
     },
