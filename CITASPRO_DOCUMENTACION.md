@@ -1,7 +1,7 @@
 # CitasPro - Documentación Completa del Proyecto
 
-**Última actualización:** 2 de Enero de 2026  
-**Versión:** 1.3.0  
+**Última actualización:** 3 de Enero de 2026  
+**Versión:** 1.5.0  
 **Cliente:** Serrano Marketing  
 **Repositorio:** https://github.com/Marckello/sistema-de-agendamiento.git
 
@@ -17,16 +17,17 @@
 6. [Páginas del Frontend](#páginas-del-frontend)
 7. [Modelos de Base de Datos](#modelos-de-base-de-datos)
 8. [Variables de Entorno](#variables-de-entorno)
-9. [Credenciales de Prueba](#credenciales-de-prueba)
+9. [Seguridad y Autenticación](#seguridad-y-autenticación)
 10. [Diseño Visual (Blitzit Style)](#diseño-visual-blitzit-style)
 11. [Funcionalidad de IA](#funcionalidad-de-ia)
 12. [Integración WhatsApp](#integración-whatsapp)
 13. [Sistema de Permisos](#sistema-de-permisos)
 14. [Sistema de Horarios Flexibles](#sistema-de-horarios-flexibles)
-15. [Problemas Resueltos](#problemas-resueltos)
-16. [Comandos Útiles](#comandos-útiles)
-17. [Despliegue EasyPanel](#despliegue-easypanel-desde-git)
-18. [Contexto para Continuación](#contexto-para-continuación)
+15. [Platform Admin vs Tenant Admin](#platform-admin-vs-tenant-admin)
+16. [Despliegue en Producción](#despliegue-en-producción)
+17. [Problemas Resueltos](#problemas-resueltos)
+18. [Comandos Útiles](#comandos-útiles)
+19. [Contexto para Continuación](#contexto-para-continuación)
 
 ---
 
@@ -51,6 +52,9 @@
 - **Integración WhatsApp**: Recordatorios automáticos vía WhatsApp Web
 - **Notificaciones por email**: Confirmaciones, recordatorios, cancelaciones
 - **Diseño moderno**: Estilo Blitzit (tema oscuro elegante)
+- **Verificación doble**: Email vía SMTP + SMS vía Firebase
+- **Captcha Turnstile**: Protección anti-bots de Cloudflare en login
+- **Platform Admin separado**: Panel de administración de la plataforma independiente
 
 ---
 
@@ -104,6 +108,7 @@
 | Headless UI | 2.x | Componentes accesibles |
 | Heroicons | 2.x | Iconos |
 | react-hot-toast | 2.x | Notificaciones toast |
+| Firebase SDK | 10.x | Autenticación SMS |
 
 ### Backend
 | Tecnología | Versión | Uso |
@@ -118,6 +123,8 @@
 | Zod | 3.x | Validación de esquemas |
 | Nodemailer | 6.x | Envío de emails |
 | OpenAI | 4.x | Asistente de IA |
+| Firebase Admin | 12.x | Verificación SMS |
+| Cloudflare Turnstile | - | Captcha anti-bots |
 
 ---
 
@@ -189,6 +196,7 @@ e:\Gestión de Citas\
 │       │   ├── 📄 appointment.service.ts   # Slots y disponibilidad
 │       │   ├── 📄 auth.service.ts
 │       │   ├── 📄 email.service.ts
+│       │   ├── 📄 turnstile.service.ts     # 🔒 CLOUDFLARE TURNSTILE
 │       │   ├── 📄 webhook.service.ts
 │       │   ├── 📄 whatsapp.service.ts      # 📱 WHATSAPP SERVICE
 │       │   ├── 📄 reminder.scheduler.ts    # 📱 SCHEDULER RECORDATORIOS
@@ -235,18 +243,27 @@ e:\Gestión de Citas\
         │   ├── 📁 layout/
         │   │   ├── 📄 MainLayout.tsx       # Layout principal
         │   │   ├── 📄 AuthLayout.tsx
+        │   │   ├── 📄 AdminLayout.tsx      # Layout Panel Admin
         │   │   ├── 📄 Sidebar.tsx
         │   │   └── 📄 Navbar.tsx
         │   ├── 📁 appointments/
         │   │   ├── 📄 AppointmentModal.tsx
         │   │   └── 📄 AppointmentDetailModal.tsx
-        │   └── 📁 chat/
-        │       └── 📄 AIChat.tsx           # ⭐ CHAT FLOTANTE IA
+        │   ├── 📁 chat/
+        │   │   └── 📄 AIChat.tsx           # ⭐ CHAT FLOTANTE IA
+        │   └── 📄 Turnstile.tsx            # 🔒 CLOUDFLARE TURNSTILE
         │
         └── 📁 pages/
             ├── 📁 auth/
-            │   ├── 📄 LoginPage.tsx
-            │   └── 📄 RegisterPage.tsx
+            │   ├── 📄 LoginPage.tsx        # Con Turnstile
+            │   └── 📄 RegisterPage.tsx     # Con verificación Email + SMS
+            ├── 📁 admin/
+            │   ├── 📄 AdminLoginPage.tsx   # 🔒 LOGIN PLATFORM ADMIN
+            │   ├── 📄 AdminDashboard.tsx
+            │   ├── 📄 TenantsManagement.tsx
+            │   ├── 📄 PlansManagement.tsx
+            │   ├── 📄 ActivityPage.tsx
+            │   └── 📄 PlatformSettings.tsx
             ├── 📁 dashboard/
             │   └── 📄 DashboardPage.tsx
             ├── 📁 calendar/
@@ -832,7 +849,114 @@ UPDATE users SET "canUseAI" = true WHERE email = 'usuario@email.com';
 
 ---
 
-## 🔧 Problemas Resueltos
+## � Platform Admin vs Tenant Admin
+
+### Diferencia Crítica
+
+| Aspecto | Platform Admin | Tenant SUPER_ADMIN |
+|---------|----------------|-------------------|
+| **Entidad** | `PlatformAdmin` (tabla separada) | `User` con role SUPER_ADMIN |
+| **Acceso** | Panel de administración de la plataforma | Dashboard de su negocio |
+| **Login URL** | `/control/acceso` (oculta) | `/login` |
+| **Puede ver** | Todos los tenants, planes, estadísticas globales | Solo su tenant |
+| **JWT Flag** | `isPlatformAdmin: true` | `role: SUPER_ADMIN` |
+
+### Ruta de Acceso Platform Admin (SEGURIDAD)
+```
+https://citas.serrano.marketing/control/acceso
+```
+⚠️ **Esta ruta NO está visible en ningún menú ni enlace. Solo el admin la conoce.**
+
+### Modelo PlatformAdmin
+```prisma
+model PlatformAdmin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("platform_admins")
+}
+```
+
+### Script de Creación de Platform Admin
+```bash
+# En backend/scripts/create-platform-admin.ts
+cd backend
+$env:DATABASE_URL='postgres://postgres:PASSWORD@HOST:5432/agenda?sslmode=disable'
+npx tsx scripts/create-platform-admin.ts
+```
+
+### Archivos Clave
+| Archivo | Descripción |
+|---------|-------------|
+| `frontend/src/pages/admin/AdminLoginPage.tsx` | Página de login exclusiva |
+| `frontend/src/App.tsx` | Ruta `/control/acceso` |
+| `backend/src/controllers/auth.controller.ts` | `loginAdmin()` |
+| `backend/src/middleware/auth.ts` | `authenticatePlatformAdmin` |
+
+---
+
+## 🔒 Seguridad y Autenticación
+
+### Sistema de Verificación en Registro
+
+El registro de nuevos tenants requiere verificación doble:
+
+1. **Verificación de Email** (vía SMTP)
+   - Se envía código de 6 dígitos al correo
+   - Servidor SMTP: `mail.serrano.marketing:465`
+   - Expira en 10 minutos
+
+2. **Verificación de Teléfono** (vía Firebase SMS)
+   - Selector de país con 15 opciones (MX, US, ES, etc.)
+   - Validación de 10 dígitos
+   - Firebase Project: `citaspro-58dd6`
+   - Verificación SMS obligatoria
+
+### Cloudflare Turnstile (Captcha)
+
+Protección anti-bots en ambos logins:
+
+| Login | Ruta | Turnstile |
+|-------|------|-----------|
+| Usuarios/Tenants | `/login` | ✅ Sí |
+| Platform Admin | `/control/acceso` | ✅ Sí |
+
+**Configuración:**
+```env
+# Backend
+TURNSTILE_SECRET_KEY=0x4AAAAAACKYtsVXKro5PEmPcGpB38un5Jw
+
+# Frontend
+VITE_TURNSTILE_SITE_KEY=0x4AAAAAACKYtozYHP7m7Ixz
+```
+
+### Archivos de Turnstile
+| Archivo | Descripción |
+|---------|-------------|
+| `frontend/src/components/Turnstile.tsx` | Widget de Cloudflare |
+| `backend/src/services/turnstile.service.ts` | Validación server-side |
+| `backend/src/config/index.ts` | Config `turnstile.secretKey` |
+
+### Firebase Configuration
+```typescript
+// frontend/src/config/firebase.ts
+const firebaseConfig = {
+  apiKey: "AIzaSyDTvI29IbiY7mKFEe89YthlOREtcReDjh4",
+  authDomain: "citaspro-58dd6.firebaseapp.com",
+  projectId: "citaspro-58dd6",
+  storageBucket: "citaspro-58dd6.firebasestorage.app",
+  messagingSenderId: "685046800124",
+  appId: "1:685046800124:web:9c7911fe8ed86255a28179"
+};
+```
+
+---
+
+## �🔧 Problemas Resueltos
 
 ### 1. Backend crash sin API key de OpenAI
 **Problema**: OpenAI client se inicializaba al cargar el módulo, crasheando si no había API key.
@@ -939,26 +1063,70 @@ git push origin main
 
 ---
 
-## 🚀 Despliegue EasyPanel (desde Git)
+## 🚀 Despliegue en Producción
 
-### Pasos Resumidos
+### URLs de Producción (Activas)
+| Servicio | URL |
+|----------|-----|
+| Frontend | https://citas.serrano.marketing |
+| Backend API | https://api.citas.serrano.marketing |
+| Platform Admin | https://citas.serrano.marketing/control/acceso |
+| EasyPanel | https://panel.serrano.marketing |
 
+### Infraestructura EasyPanel
+| Servicio | Tipo | Puerto |
+|----------|------|--------|
+| agenda (frontend) | App GitHub | 80 |
+| agendamiento (backend) | App GitHub | 4000 |
+| citas (PostgreSQL) | Database | 5432 |
+
+### Base de Datos Producción
+```
+Host externo: panel.serrano.marketing
+Host interno: agenda_citas (para apps en EasyPanel)
+Puerto: 5432
+Usuario: postgres
+Base de datos: agenda
+```
+
+### Variables de Entorno Producción (Backend)
+```env
+NODE_ENV=production
+PORT=4000
+DATABASE_URL=postgresql://postgres:PASSWORD@agenda_citas:5432/agenda?schema=public
+JWT_ACCESS_SECRET=tu-secret-aqui-genera-uno
+JWT_REFRESH_SECRET=tu-secret-aqui-genera-otro
+SMTP_HOST=mail.serrano.marketing
+SMTP_PORT=465
+SMTP_USER=hola@serrano.marketing
+SMTP_PASS=SerranoMail2025*
+SMTP_FROM_NAME=CitasPro
+SMTP_FROM_EMAIL=hola@serrano.marketing
+OPENAI_API_KEY=sk-proj-...
+TURNSTILE_SECRET_KEY=0x4AAAAAACKYtsVXKro5PEmPcGpB38un5Jw
+CORS_ORIGINS=https://citas.serrano.marketing
+```
+
+### Variables de Entorno Producción (Frontend)
+```env
+VITE_API_URL=https://api.citas.serrano.marketing/api
+VITE_TURNSTILE_SITE_KEY=0x4AAAAAACKYtozYHP7m7Ixz
+```
+
+### Proceso de Deploy
 1. **Push a GitHub**: `git push origin main`
-2. **PostgreSQL en EasyPanel**: Crear servicio de base de datos
-3. **Backend en EasyPanel**: 
-   - Source: GitHub
-   - Build Path: `backend`
-   - Port: 4000
-   - Variables: DATABASE_URL, JWT_SECRET, OPENAI_API_KEY, etc.
-4. **Migraciones**: `npx prisma migrate deploy && npx prisma db seed`
-5. **Frontend en EasyPanel**:
-   - Source: GitHub
-   - Build Path: `frontend`
-   - Port: 80
-   - Variable: VITE_API_URL
-6. **Dominios SSL**: Configurar en cada servicio
+2. **En EasyPanel**: Click "Implementar" en cada servicio
+3. **Esperar build**: Frontend ~2min, Backend ~3min
+4. **Verificar**: https://api.citas.serrano.marketing/api/health
 
-Ver **EASYPANEL.md** para guía detallada.
+### Archivo Dockerfile (Backend)
+El Dockerfile del backend incluye:
+- Chromium para Puppeteer (WhatsApp)
+- OpenSSL para Prisma
+- Build multi-stage (builder + production)
+
+### Credenciales Privadas
+Ver archivo `.credentials-private.md` (NO en GitHub, en .gitignore)
 
 ---
 
@@ -969,6 +1137,8 @@ Ver **EASYPANEL.md** para guía detallada.
 2. `frontend/src/styles/index.css` - Estilos globales
 3. `backend/prisma/schema.prisma` - Estructura de BD
 4. `backend/src/services/ai.service.ts` - Lógica IA
+5. `frontend/src/App.tsx` - Rutas incluyendo `/control/acceso`
+6. `backend/src/config/index.ts` - Configuración central (named export!)
 
 ### Convenciones de Código
 - Componentes React: PascalCase (`DashboardPage.tsx`)
@@ -976,6 +1146,7 @@ Ver **EASYPANEL.md** para guía detallada.
 - Estilos: Tailwind CSS + clases personalizadas
 - Estado servidor: TanStack Query
 - Estado UI: useState/useReducer
+- **Config import**: `import { config } from '../config/index.js'` (NO default!)
 
 ### API Response Format
 ```typescript
@@ -1017,11 +1188,17 @@ Ver **EASYPANEL.md** para guía detallada.
 - **Subida de logo** con validación PNG/JPG, 2MB max
 - **Logo dinámico en Sidebar** desde configuración del tenant
 - **Rutas de configuración** específicas (general, branding, booking, notifications)
+- **Verificación de Email** vía SMTP (mail.serrano.marketing)
+- **Verificación de SMS** vía Firebase (citaspro-58dd6)
+- **Cloudflare Turnstile** en login de usuarios y Platform Admin
+- **Platform Admin separado** con login en `/control/acceso`
+- **Selector de código de país** en registro (15 países)
+- **Desplegado en producción** (https://citas.serrano.marketing)
 
 🔄 **Pendiente:**
 - [ ] Aplicar colores personalizados a la UI dinámicamente
 - [ ] Notificaciones push
-- [ ] Recordatorios WhatsApp
+- [ ] Recordatorios WhatsApp funcionales
 - [ ] Pagos online
 - [ ] Reportes exportables
 - [ ] Multi-idioma
@@ -1030,75 +1207,61 @@ Ver **EASYPANEL.md** para guía detallada.
 
 ## 🚨 ÚLTIMA SESIÓN - Pasos para Retomar
 
-### Lo Último que se Hizo (2 Enero 2026 - Sesión Vespertina)
-1. ✅ Corregido error 400 al crear servicios (campos no existentes en Prisma)
-2. ✅ Corregido slots de citas que no aparecían (extracción incorrecta de respuesta)
-3. ✅ Formulario de edición de usuarios ahora carga datos correctamente
-4. ✅ Agregadas rutas de configuración faltantes
-5. ✅ Todos los formularios de configuración ahora persisten datos
-6. ✅ Implementada subida de logo con validación
-7. ✅ Logo del tenant se muestra en el Sidebar
-8. ✅ Corregidos errores TypeScript para despliegue
+### Lo Último que se Hizo (3 Enero 2026 - Sesión Completa)
 
-### Cambios Técnicos Importantes
+#### Seguridad y Autenticación
+1. ✅ Implementado Cloudflare Turnstile en login de usuarios
+2. ✅ Implementado Cloudflare Turnstile en login de Platform Admin
+3. ✅ Creado componente `frontend/src/components/Turnstile.tsx`
+4. ✅ Creado servicio `backend/src/services/turnstile.service.ts`
+5. ✅ Verificación SMS obligatoria (removido botón "omitir")
+
+#### Platform Admin (CRÍTICO)
+6. ✅ **Separación Platform Admin vs Tenant Admin** (error de seguridad corregido)
+7. ✅ Creada página `frontend/src/pages/admin/AdminLoginPage.tsx`
+8. ✅ Ruta cambiada de `/admin/login` a `/control/acceso` (por seguridad)
+9. ✅ Removido enlace "Ir al Panel Admin" del Sidebar de tenants
+10. ✅ Platform Admin creado en producción:
+    - Email: `marco@serrano.marketing`
+    - Password: `CSerrano6024502025*`
+    - ID: `80dd5fda-670b-4b77-a555-7c91582a9dab`
+
+#### Registro de Usuarios
+11. ✅ Selector de código de país con 15 opciones (MX, US, ES, etc.)
+12. ✅ Validación de 10 dígitos para teléfono
+13. ✅ Verificación de email funcionando (SMTP)
+14. ✅ Verificación de SMS funcionando (Firebase)
+
+#### Correcciones de Build
+15. ✅ Corregido import de config: `import { config }` en lugar de `import config`
+16. ✅ Corregido type assertion en turnstile.service.ts
+17. ✅ Archivo `.credentials-private.md` creado y agregado a .gitignore
+
+### Commits Importantes de Esta Sesión
+```
+8a3f386 fix: corregir imports de config y cambiar ruta admin a /control/acceso
+50e84e1 chore: agregar archivos privados a gitignore
+```
+
+### Archivos Modificados Esta Sesión
 
 | Archivo | Cambio |
 |---------|--------|
-| `backend/src/controllers/services.controller.ts` | Extrae campos no-DB antes de Prisma |
-| `backend/src/routes/settings.routes.ts` | Agregado multer, rutas /general, /branding, etc. |
-| `backend/src/controllers/settings.controller.ts` | Nuevo handler `uploadLogo` con Base64 |
-| `frontend/src/services/appointments.ts` | Tipo de respuesta corregido para slots |
-| `frontend/src/components/appointments/AppointmentModal.tsx` | Extracción `slotsData.data.slots` |
-| `frontend/src/pages/users/UsersPage.tsx` | useEffect + reset() para edición |
-| `frontend/src/pages/settings/SettingsPage.tsx` | useEffect + reset() en todos los componentes, UI de upload |
-| `frontend/src/components/layout/Sidebar.tsx` | Query para settings, logo dinámico |
+| `frontend/src/components/Turnstile.tsx` | NUEVO - Widget Cloudflare |
+| `frontend/src/pages/admin/AdminLoginPage.tsx` | NUEVO - Login Platform Admin |
+| `frontend/src/pages/auth/LoginPage.tsx` | Agregado Turnstile |
+| `frontend/src/pages/auth/RegisterPage.tsx` | Selector país, SMS obligatorio |
+| `frontend/src/components/layout/Sidebar.tsx` | Removido link a Panel Admin |
+| `frontend/src/App.tsx` | Ruta `/control/acceso`, AdminRoute con isPlatformAdmin |
+| `backend/src/services/turnstile.service.ts` | NUEVO - Validación Turnstile |
+| `backend/src/controllers/auth.controller.ts` | Turnstile en login y loginAdmin |
+| `backend/src/config/index.ts` | Agregado config.turnstile |
+| `backend/scripts/create-platform-admin.ts` | NUEVO - Script crear admin |
+| `.credentials-private.md` | NUEVO - Credenciales privadas (gitignored) |
+| `.gitignore` | Agregado *.private.md |
 
-### Para Continuar
-El sistema está desplegado en EasyPanel. Verificar que:
-1. El logo aparezca en la esquina superior izquierda del Sidebar
-2. La configuración de branding se guarde correctamente
-3. Los colores elegidos se almacenen (aplicación visual pendiente)
+### Para Continuar Desarrollo Local
 
-### Problema Anterior
-Docker Desktop crasheó y no permite iniciar la base de datos PostgreSQL.
-
-### Opciones para Continuar
-
-#### Opción A: Reiniciar Docker (Recomendado)
-1. Reiniciar la computadora
-2. Abrir Docker Desktop y esperar a que esté verde
-3. Ejecutar:
-```powershell
-docker start citas_db
-cd "e:\Gestión de Citas\backend"
-npm run dev
-cd "e:\Gestión de Citas\frontend"
-npm run dev
-```
-4. Ir a http://localhost:3000/
-5. Login con tus credenciales configuradas en .env
-
-#### Opción B: Instalar PostgreSQL Nativo (Si Docker sigue fallando)
-```powershell
-winget install PostgreSQL.PostgreSQL.16
-```
-Luego actualizar `backend/.env`:
-```env
-DATABASE_URL=postgresql://postgres:TU_PASSWORD@localhost:5432/agenda
-```
-
-### Lo Último que se Hizo
-1. ✅ Agregados campos de permisos al modelo User (canModify, canDelete, canUseAI)
-2. ✅ Toggle de "Acceso al asistente de IA" en formulario de usuarios
-3. ✅ Verificación de email y teléfono en registro (Firebase)
-4. ✅ Puerto del frontend cambiado a 3000 (en vite.config.ts)
-5. ⏳ Pendiente probar que el chat de IA aparezca después de login
-
-### Verificar Después de Iniciar
-1. El botón de chat flotante (💬) debe aparecer en esquina inferior derecha del dashboard
-2. Si no aparece, cerrar sesión y volver a iniciar (para refrescar el token JWT)
-
-### Comandos Rápidos de Inicio
 ```powershell
 # Terminal 1 - Base de datos
 docker start citas_db
@@ -1112,12 +1275,37 @@ cd "e:\Gestión de Citas\frontend"
 npm run dev
 ```
 
-### URLs
+### URLs de Desarrollo
 | Servicio | URL |
 |----------|-----|
-| Frontend | http://localhost:3000 |
+| Frontend | http://localhost:5173 |
 | Backend | http://localhost:4000/api |
 | Health Check | http://localhost:4000/api/health |
+
+### URLs de Producción
+| Servicio | URL |
+|----------|-----|
+| Frontend | https://citas.serrano.marketing |
+| Backend API | https://api.citas.serrano.marketing |
+| Platform Admin | https://citas.serrano.marketing/control/acceso |
+| EasyPanel | https://panel.serrano.marketing |
+
+### Verificar Después de Deploy
+1. Login normal en https://citas.serrano.marketing/login funciona
+2. Turnstile aparece y valida correctamente
+3. Platform Admin puede acceder en /control/acceso
+4. Los tenants NO pueden ver el enlace al Panel Admin
+
+### Archivo de Credenciales Privadas
+El archivo `.credentials-private.md` contiene todas las credenciales de producción:
+- Servidor EasyPanel (IP, URLs)
+- Base de datos PostgreSQL (host, user, password)
+- Firebase (API keys)
+- Cloudflare Turnstile (site key, secret key)
+- SMTP (host, user, password)
+- Platform Admin (email, password)
+
+⚠️ **Este archivo NO está en GitHub** (en .gitignore)
 
 ---
 
