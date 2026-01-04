@@ -511,12 +511,11 @@ model WorkSchedule {
 ### Backend (.env)
 ```env
 # Database
-DATABASE_URL=postgresql://postgres:postgres123@localhost:5432/agenda
+DATABASE_URL=postgresql://postgres:TU_PASSWORD@localhost:5432/agenda
 
 # JWT
-JWT_SECRET=tu-super-secreto-jwt-key-cambiar-en-produccion
-JWT_EXPIRES_IN=7d
-JWT_REFRESH_EXPIRES_IN=30d
+JWT_ACCESS_SECRET=tu-super-secreto-access-key-cambiar-en-produccion
+JWT_REFRESH_SECRET=tu-super-secreto-refresh-key-cambiar-en-produccion
 
 # Server
 PORT=4000
@@ -544,7 +543,7 @@ VITE_API_URL=http://localhost:4000/api
 ### Raíz del Proyecto (.env)
 ```env
 # Para docker-compose
-OPENAI_API_KEY=sk-proj-...
+OPENAI_API_KEY=sk-proj-... (configurar en .env)
 ```
 
 ---
@@ -552,10 +551,9 @@ OPENAI_API_KEY=sk-proj-...
 ## 👤 Credenciales de Prueba
 
 ```
-Email:    marco@serrano.marketing
-Password: Serrano602450*
-Rol:      SUPER_ADMIN
-Tenant:   Serrano Marketing
+Las credenciales de prueba se configuran en el archivo .env local.
+No se incluyen en el repositorio por seguridad.
+Ver backend/.env.example para la estructura.
 ```
 
 ---
@@ -1078,7 +1076,7 @@ cd "e:\Gestión de Citas\frontend"
 npm run dev
 ```
 4. Ir a http://localhost:3000/
-5. Login: `marco@serrano.marketing` / `Serrano602450*`
+5. Login con tus credenciales configuradas en .env
 
 #### Opción B: Instalar PostgreSQL Nativo (Si Docker sigue fallando)
 ```powershell
@@ -1092,7 +1090,7 @@ DATABASE_URL=postgresql://postgres:TU_PASSWORD@localhost:5432/agenda
 ### Lo Último que se Hizo
 1. ✅ Agregados campos de permisos al modelo User (canModify, canDelete, canUseAI)
 2. ✅ Toggle de "Acceso al asistente de IA" en formulario de usuarios
-3. ✅ Usuario `marco@serrano.marketing` tiene `canUseAI = true` en BD
+3. ✅ Verificación de email y teléfono en registro (Firebase)
 4. ✅ Puerto del frontend cambiado a 3000 (en vite.config.ts)
 5. ⏳ Pendiente probar que el chat de IA aparezca después de login
 
