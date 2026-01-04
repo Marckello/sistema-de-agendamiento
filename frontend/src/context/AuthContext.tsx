@@ -23,6 +23,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = useCallback(async () => {
     const token = localStorage.getItem('accessToken');
+    const isPlatformAdmin = localStorage.getItem('isPlatformAdmin') === 'true';
+    
+    // Si es Platform Admin, no verificar con /auth/me (es otro tipo de autenticación)
+    if (isPlatformAdmin) {
+      setIsLoading(false);
+      return;
+    }
+    
     if (!token) {
       setIsLoading(false);
       return;
@@ -32,8 +40,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await api.get('/auth/me');
       setUser(response.data.data.user);
     } catch (error) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
+      // Solo limpiar tokens si NO es platform admin
+      if (!isPlatformAdmin) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('isPlatformAdmin');
     setUser(null);
     toast.success('Sesión cerrada');
     navigate('/login');
