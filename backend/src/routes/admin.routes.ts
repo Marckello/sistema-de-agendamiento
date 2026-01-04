@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticate, requireRole } from '../middleware/auth.js';
+import { authenticatePlatformAdmin } from '../middleware/auth.js';
 import {
   getPlatformStats,
   listTenants,
@@ -15,9 +15,8 @@ import {
 
 const router = Router();
 
-// Todas las rutas requieren autenticación y rol SUPER_ADMIN
-router.use(authenticate);
-router.use(requireRole('SUPER_ADMIN'));
+// Todas las rutas requieren autenticación de Platform Admin
+router.use(authenticatePlatformAdmin);
 
 // Dashboard
 router.get('/stats', getPlatformStats);
