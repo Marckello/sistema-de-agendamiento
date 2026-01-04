@@ -144,6 +144,7 @@ export interface Service {
   price: number;
   color?: string;
   isActive: boolean;
+  isPublic?: boolean;
   requiresConfirmation: boolean;
   maxAdvanceBooking: number;
   minAdvanceBooking: number;
@@ -164,6 +165,7 @@ export interface CreateServiceData {
   price: number;
   color?: string;
   isActive?: boolean;
+  isPublic?: boolean;
   requiresConfirmation?: boolean;
   maxAdvanceBooking?: number;
   minAdvanceBooking?: number;

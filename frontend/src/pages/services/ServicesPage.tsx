@@ -299,6 +299,7 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
       price: service.price,
       color: service.color || '#3B82F6',
       isActive: service.isActive,
+      isPublic: service.isPublic ?? true,
       requiresConfirmation: service.requiresConfirmation,
       maxAdvanceBooking: service.maxAdvanceBooking,
       minAdvanceBooking: service.minAdvanceBooking,
@@ -309,6 +310,7 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
       price: 0,
       color: '#3B82F6',
       isActive: true,
+      isPublic: true,
       requiresConfirmation: false,
       maxAdvanceBooking: 30,
       minAdvanceBooking: 1,
@@ -632,6 +634,22 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
                         <ToggleSwitch
                           checked={watch('requiresConfirmation') || false}
                           onChange={(val) => setValue('requiresConfirmation', val)}
+                          size="sm"
+                        />
+                      </div>
+
+                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-primary-50 to-purple-50 dark:from-primary-900/20 dark:to-purple-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
+                        <div>
+                          <span className="text-sm font-medium text-gray-900 dark:text-white">
+                            🌐 Visible en reservas online
+                          </span>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                            Los clientes podrán ver y reservar este servicio desde tu página pública
+                          </p>
+                        </div>
+                        <ToggleSwitch
+                          checked={watch('isPublic') ?? true}
+                          onChange={(val) => setValue('isPublic', val)}
                           size="sm"
                         />
                       </div>
