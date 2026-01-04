@@ -27,6 +27,10 @@ yarn-error.log*
 .env.production.local
 .env.production
 
+# Private credentials (NEVER commit)
+.credentials-private.md
+*.private.md
+
 # IDE
 .idea/
 .vscode/
