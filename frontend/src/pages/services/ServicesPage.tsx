@@ -19,6 +19,7 @@ import {
 import { serviceService } from '@/services/services';
 import { userService } from '@/services/users';
 import { Service, CreateServiceData, ServiceCategory, User } from '@/types';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 export default function ServicesPage() {
   const queryClient = useQueryClient();
@@ -286,6 +287,8 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CreateServiceData>({
     defaultValues: service ? {
@@ -622,17 +625,15 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            {...register('requiresConfirmation')}
-                            className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600"
-                          />
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            Requiere confirmación manual
-                          </span>
-                        </label>
+                      <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
+                          Requiere confirmación manual
+                        </span>
+                        <ToggleSwitch
+                          checked={watch('requiresConfirmation') || false}
+                          onChange={(val) => setValue('requiresConfirmation', val)}
+                          size="sm"
+                        />
                       </div>
                     </div>
                   )}
@@ -651,20 +652,15 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[300px] overflow-y-auto">
                           {employees.map((employee: User) => (
-                            <label
+                            <div
                               key={employee.id}
-                              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                              onClick={() => toggleEmployee(employee.id)}
+                              className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${
                                 selectedEmployees.includes(employee.id)
                                   ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
                                   : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                               }`}
                             >
-                              <input
-                                type="checkbox"
-                                checked={selectedEmployees.includes(employee.id)}
-                                onChange={() => toggleEmployee(employee.id)}
-                                className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600"
-                              />
                               <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white font-semibold">
                                   {employee.firstName?.[0]}{employee.lastName?.[0]}
@@ -680,7 +676,12 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
                                   )}
                                 </div>
                               </div>
-                            </label>
+                              <ToggleSwitch
+                                checked={selectedEmployees.includes(employee.id)}
+                                onChange={() => toggleEmployee(employee.id)}
+                                size="sm"
+                              />
+                            </div>
                           ))}
                         </div>
                       )}
@@ -706,17 +707,16 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
                                   : 'border-gray-200 dark:border-gray-700'
                               }`}
                             >
-                              <label className="flex items-center gap-3 cursor-pointer min-w-[120px]">
-                                <input
-                                  type="checkbox"
+                              <div className="flex items-center gap-3 min-w-[140px]">
+                                <ToggleSwitch
                                   checked={schedule?.isAvailable || false}
                                   onChange={() => toggleDay(day.value)}
-                                  className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600"
+                                  size="sm"
                                 />
                                 <span className="font-medium text-gray-900 dark:text-white">
                                   {day.label}
                                 </span>
-                              </label>
+                              </div>
 
                               {schedule?.isAvailable && (
                                 <div className="flex items-center gap-2 flex-1">

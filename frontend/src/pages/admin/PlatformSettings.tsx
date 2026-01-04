@@ -10,6 +10,7 @@ import {
   Webhook,
   Send,
 } from 'lucide-react';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 export default function PlatformSettings() {
   const [activeTab, setActiveTab] = useState<'general' | 'email' | 'security' | 'webhooks'>('general');
@@ -179,15 +180,11 @@ export default function PlatformSettings() {
                       <p className="text-white font-medium">Modo Mantenimiento</p>
                       <p className="text-gray-400 text-sm">Desactiva el acceso público a la plataforma</p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={generalSettings.maintenanceMode}
-                        onChange={(e) => setGeneralSettings({ ...generalSettings, maintenanceMode: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                    </label>
+                    <ToggleSwitch
+                      checked={generalSettings.maintenanceMode}
+                      onChange={(val) => setGeneralSettings({ ...generalSettings, maintenanceMode: val })}
+                      size="sm"
+                    />
                   </div>
                 </div>
               </div>
@@ -326,15 +323,11 @@ export default function PlatformSettings() {
                       <p className="text-white font-medium">Requerir Verificación de Email</p>
                       <p className="text-gray-400 text-sm">Los usuarios deben verificar su email antes de acceder</p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={securitySettings.requireEmailVerification}
-                        onChange={(e) => setSecuritySettings({ ...securitySettings, requireEmailVerification: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                    </label>
+                    <ToggleSwitch
+                      checked={securitySettings.requireEmailVerification}
+                      onChange={(val) => setSecuritySettings({ ...securitySettings, requireEmailVerification: val })}
+                      size="sm"
+                    />
                   </div>
 
                   <div className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
@@ -342,15 +335,11 @@ export default function PlatformSettings() {
                       <p className="text-white font-medium">Permitir Auto-Registro</p>
                       <p className="text-gray-400 text-sm">Nuevas empresas pueden registrarse por sí mismas</p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={securitySettings.allowSelfRegistration}
-                        onChange={(e) => setSecuritySettings({ ...securitySettings, allowSelfRegistration: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                    </label>
+                    <ToggleSwitch
+                      checked={securitySettings.allowSelfRegistration}
+                      onChange={(val) => setSecuritySettings({ ...securitySettings, allowSelfRegistration: val })}
+                      size="sm"
+                    />
                   </div>
                 </div>
               </div>
@@ -373,15 +362,11 @@ export default function PlatformSettings() {
                       <p className="text-white font-medium">Habilitar Webhooks</p>
                       <p className="text-gray-400 text-sm">Activa el envío de eventos a URLs externas</p>
                     </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={webhookSettings.enabled}
-                        onChange={(e) => setWebhookSettings({ ...webhookSettings, enabled: e.target.checked })}
-                        className="sr-only peer"
-                      />
-                      <div className="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                    </label>
+                    <ToggleSwitch
+                      checked={webhookSettings.enabled}
+                      onChange={(val) => setWebhookSettings({ ...webhookSettings, enabled: val })}
+                      size="sm"
+                    />
                   </div>
 
                   {/* URL and Secret */}
@@ -431,18 +416,17 @@ export default function PlatformSettings() {
                         { key: 'clientCreated', label: 'Cliente creado' },
                         { key: 'clientUpdated', label: 'Cliente actualizado' },
                       ].map((event) => (
-                        <label key={event.key} className="flex items-center gap-3 p-3 bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-750">
-                          <input
-                            type="checkbox"
-                            checked={webhookSettings.events[event.key as keyof typeof webhookSettings.events]}
-                            onChange={(e) => setWebhookSettings({
-                              ...webhookSettings,
-                              events: { ...webhookSettings.events, [event.key]: e.target.checked }
-                            })}
-                            className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
-                          />
+                        <div key={event.key} className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
                           <span className="text-white text-sm">{event.label}</span>
-                        </label>
+                          <ToggleSwitch
+                            checked={webhookSettings.events[event.key as keyof typeof webhookSettings.events]}
+                            onChange={(val) => setWebhookSettings({
+                              ...webhookSettings,
+                              events: { ...webhookSettings.events, [event.key]: val }
+                            })}
+                            size="sm"
+                          />
+                        </div>
                       ))}
                     </div>
                   </div>

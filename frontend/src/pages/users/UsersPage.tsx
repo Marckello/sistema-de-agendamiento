@@ -13,6 +13,7 @@ import {
 import { userService, CreateUserData } from '@/services/users';
 import { User, UserRole } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 const ROLE_CONFIG: Record<UserRole, { label: string; color: string; bgColor: string }> = {
   SUPER_ADMIN: { label: 'Super Admin', color: 'text-purple-600', bgColor: 'bg-purple-100 dark:bg-purple-900/50' },
@@ -246,6 +247,8 @@ function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<CreateUserData>({
     defaultValues: user ? {
@@ -433,38 +436,38 @@ function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) {
                     </select>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <label className="label">Permisos</label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        {...register('canModify')}
-                        className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600"
-                      />
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <span className="text-sm text-gray-700 dark:text-gray-300">
                         Puede modificar registros
                       </span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        {...register('canDelete')}
-                        className="w-4 h-4 text-primary-600 rounded border-gray-300 dark:border-gray-600"
+                      <ToggleSwitch
+                        checked={watch('canModify') || false}
+                        onChange={(val) => setValue('canModify', val)}
+                        size="sm"
                       />
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <span className="text-sm text-gray-700 dark:text-gray-300">
                         Puede eliminar registros
                       </span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        {...register('canUseAI')}
-                        className="w-4 h-4 text-purple-600 rounded border-gray-300 dark:border-gray-600"
+                      <ToggleSwitch
+                        checked={watch('canDelete') || false}
+                        onChange={(val) => setValue('canDelete', val)}
+                        size="sm"
                       />
+                    </div>
+                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                       <span className="text-sm text-gray-700 dark:text-gray-300">
                         ✨ Acceso al asistente de IA
                       </span>
-                    </label>
+                      <ToggleSwitch
+                        checked={watch('canUseAI') || false}
+                        onChange={(val) => setValue('canUseAI', val)}
+                        size="sm"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">

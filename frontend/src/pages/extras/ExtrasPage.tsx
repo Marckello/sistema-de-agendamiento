@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { extrasService } from '@/services/extras';
 import { Extra, CreateExtraData } from '@/types';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 export default function ExtrasPage() {
   const queryClient = useQueryClient();
@@ -200,7 +201,7 @@ function ExtraModal({ isOpen, onClose, extra }: ExtraModalProps) {
   const queryClient = useQueryClient();
   const isEditing = !!extra;
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateExtraData>({
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CreateExtraData>({
     defaultValues: extra ? {
       name: extra.name,
       description: extra.description || '',
@@ -369,16 +370,15 @@ function ExtraModal({ isOpen, onClose, extra }: ExtraModalProps) {
                   </div>
 
                   {/* Activo */}
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                      {...register('isActive')}
-                    />
-                    <label htmlFor="isActive" className="text-sm text-gray-700 dark:text-gray-300">
+                  <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
                       Extra activo (visible para agregar a citas)
-                    </label>
+                    </span>
+                    <ToggleSwitch
+                      checked={watch('isActive') ?? true}
+                      onChange={(val) => setValue('isActive', val)}
+                      size="sm"
+                    />
                   </div>
 
                   {/* Buttons */}

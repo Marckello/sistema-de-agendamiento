@@ -14,6 +14,7 @@ import {
   Star,
   DollarSign,
 } from 'lucide-react';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 export default function PlansManagement() {
   const [plans, setPlans] = useState<Plan[]>([]);
@@ -332,46 +333,50 @@ export default function PlansManagement() {
               <div>
                 <label className="block text-gray-400 text-sm mb-3">Características</label>
                 <div className="space-y-3">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <MessageSquare className="w-4 h-4 text-gray-400" />
+                      <span className="text-white">Integración WhatsApp</span>
+                    </div>
+                    <ToggleSwitch
                       checked={formData.hasWhatsApp}
-                      onChange={(e) => setFormData({ ...formData, hasWhatsApp: e.target.checked })}
-                      className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-gray-900"
+                      onChange={(val) => setFormData({ ...formData, hasWhatsApp: val })}
+                      size="sm"
                     />
-                    <MessageSquare className="w-4 h-4 text-gray-400" />
-                    <span className="text-white">Integración WhatsApp</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Brain className="w-4 h-4 text-gray-400" />
+                      <span className="text-white">Asistente IA</span>
+                    </div>
+                    <ToggleSwitch
                       checked={formData.hasAI}
-                      onChange={(e) => setFormData({ ...formData, hasAI: e.target.checked })}
-                      className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-gray-900"
+                      onChange={(val) => setFormData({ ...formData, hasAI: val })}
+                      size="sm"
                     />
-                    <Brain className="w-4 h-4 text-gray-400" />
-                    <span className="text-white">Asistente IA</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Star className="w-4 h-4 text-gray-400" />
+                      <span className="text-white">Reportes avanzados</span>
+                    </div>
+                    <ToggleSwitch
                       checked={formData.hasReports}
-                      onChange={(e) => setFormData({ ...formData, hasReports: e.target.checked })}
-                      className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-gray-900"
+                      onChange={(val) => setFormData({ ...formData, hasReports: val })}
+                      size="sm"
                     />
-                    <Star className="w-4 h-4 text-gray-400" />
-                    <span className="text-white">Reportes avanzados</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <CreditCard className="w-4 h-4 text-gray-400" />
+                      <span className="text-white">Marca personalizada</span>
+                    </div>
+                    <ToggleSwitch
                       checked={formData.hasCustomBranding}
-                      onChange={(e) => setFormData({ ...formData, hasCustomBranding: e.target.checked })}
-                      className="w-5 h-5 rounded border-gray-600 bg-gray-800 text-purple-500 focus:ring-purple-500 focus:ring-offset-gray-900"
+                      onChange={(val) => setFormData({ ...formData, hasCustomBranding: val })}
+                      size="sm"
                     />
-                    <CreditCard className="w-4 h-4 text-gray-400" />
-                    <span className="text-white">Marca personalizada</span>
-                  </label>
+                  </div>
                 </div>
               </div>
 

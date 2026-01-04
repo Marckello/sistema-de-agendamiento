@@ -6,6 +6,7 @@ import { toast } from 'react-hot-toast';
 import { auth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from '@/config/firebase';
 import verificationService from '@/services/verification';
 import { useAuth } from '@/context/AuthContext';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 // Declarar tipo global para window
 declare global {
@@ -55,6 +56,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [registrationEmail, setRegistrationEmail] = useState('');
   const [registrationPhone, setRegistrationPhone] = useState('');
   const [selectedCountryCode, setSelectedCountryCode] = useState('+52'); // México por defecto
@@ -623,17 +625,15 @@ export default function RegisterPage() {
             )}
           </div>
 
-          <div className="flex items-start">
-            <input
-              id="terms"
-              type="checkbox"
-              required
-              className="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded dark:border-gray-600 dark:bg-gray-700"
-            />
-            <label
-              htmlFor="terms"
-              className="ml-2 text-sm text-gray-600 dark:text-gray-400"
-            >
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5">
+              <ToggleSwitch
+                checked={acceptedTerms}
+                onChange={setAcceptedTerms}
+                size="sm"
+              />
+            </div>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
               Acepto los{' '}
               <a href="#" className="text-primary-600 hover:text-primary-500 dark:text-primary-400">
                 términos y condiciones
@@ -642,7 +642,7 @@ export default function RegisterPage() {
               <a href="#" className="text-primary-600 hover:text-primary-500 dark:text-primary-400">
                 política de privacidad
               </a>
-            </label>
+            </span>
           </div>
 
           <button

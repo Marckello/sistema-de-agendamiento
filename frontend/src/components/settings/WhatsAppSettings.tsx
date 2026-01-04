@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { whatsappService, WhatsAppStatus, WhatsAppConfig, WhatsAppMessageLog } from '../../services/whatsapp';
 import { toast } from 'react-hot-toast';
+import { ToggleSwitch } from '../ui/ToggleSwitch';
 
 interface TabProps {
   active: boolean;
@@ -446,15 +447,11 @@ export default function WhatsAppSettings() {
                   <Clock className="w-5 h-5 text-accent-500" />
                   <h3 className="text-white font-medium">Horario de operación automático</h3>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.autoConnectEnabled}
-                    onChange={(e) => setConfig({ ...config, autoConnectEnabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-600"></div>
-                </label>
+                <ToggleSwitch
+                  checked={config.autoConnectEnabled}
+                  onChange={(val) => setConfig({ ...config, autoConnectEnabled: val })}
+                  size="sm"
+                />
               </div>
               
               {config.autoConnectEnabled && (
@@ -492,15 +489,11 @@ export default function WhatsAppSettings() {
                   <Bell className="w-5 h-5 text-accent-500" />
                   <h3 className="text-white font-medium">Recordatorios automáticos</h3>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.reminderEnabled}
-                    onChange={(e) => setConfig({ ...config, reminderEnabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-600"></div>
-                </label>
+                <ToggleSwitch
+                  checked={config.reminderEnabled}
+                  onChange={(val) => setConfig({ ...config, reminderEnabled: val })}
+                  size="sm"
+                />
               </div>
 
               {config.reminderEnabled && (
@@ -509,15 +502,11 @@ export default function WhatsAppSettings() {
                   <div className="bg-dark-800 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <label className="text-white text-sm">Recordatorio 24 horas antes</label>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={config.reminder24hEnabled}
-                          onChange={(e) => setConfig({ ...config, reminder24hEnabled: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent-600"></div>
-                      </label>
+                      <ToggleSwitch
+                        checked={config.reminder24hEnabled}
+                        onChange={(val) => setConfig({ ...config, reminder24hEnabled: val })}
+                        size="sm"
+                      />
                     </div>
                     {config.reminder24hEnabled && (
                       <textarea
@@ -533,15 +522,11 @@ export default function WhatsAppSettings() {
                   <div className="bg-dark-800 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <label className="text-white text-sm">Recordatorio 1 hora antes</label>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={config.reminder1hEnabled}
-                          onChange={(e) => setConfig({ ...config, reminder1hEnabled: e.target.checked })}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-accent-600"></div>
-                      </label>
+                      <ToggleSwitch
+                        checked={config.reminder1hEnabled}
+                        onChange={(val) => setConfig({ ...config, reminder1hEnabled: val })}
+                        size="sm"
+                      />
                     </div>
                     {config.reminder1hEnabled && (
                       <textarea
@@ -567,15 +552,11 @@ export default function WhatsAppSettings() {
                   <MessageCircle className="w-5 h-5 text-accent-500" />
                   <h3 className="text-white font-medium">Respuesta automática</h3>
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={config.autoReplyEnabled}
-                    onChange={(e) => setConfig({ ...config, autoReplyEnabled: e.target.checked })}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-dark-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent-600"></div>
-                </label>
+                <ToggleSwitch
+                  checked={config.autoReplyEnabled}
+                  onChange={(val) => setConfig({ ...config, autoReplyEnabled: val })}
+                  size="sm"
+                />
               </div>
 
               {config.autoReplyEnabled && (

@@ -17,6 +17,7 @@ import { serviceService } from '@/services/services';
 import { userService } from '@/services/users';
 import { extrasService } from '@/services/extras';
 import { Client, Service, User, CreateAppointmentData, TimeSlot, Extra } from '@/types';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 interface AppointmentModalProps {
   isOpen: boolean;
@@ -537,16 +538,16 @@ export default function AppointmentModal({
                       <label className="label">Extras (opcional)</label>
                       <div className="space-y-2 max-h-48 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
                         {extras.map((extra: Extra) => (
-                          <label
+                          <div
                             key={extra.id}
+                            onClick={() => toggleExtra(extra.id)}
                             className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                           >
                             <div className="flex items-center gap-3">
-                              <input
-                                type="checkbox"
+                              <ToggleSwitch
                                 checked={isExtraSelected(extra.id)}
                                 onChange={() => toggleExtra(extra.id)}
-                                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                                size="sm"
                               />
                               <span className="text-sm text-gray-700 dark:text-gray-300">
                                 {extra.name}
@@ -555,7 +556,7 @@ export default function AppointmentModal({
                             <span className="text-sm font-medium text-gray-900 dark:text-white">
                               +${Number(extra.price).toFixed(2)}
                             </span>
-                          </label>
+                          </div>
                         ))}
                       </div>
                       {selectedExtras.length > 0 && (

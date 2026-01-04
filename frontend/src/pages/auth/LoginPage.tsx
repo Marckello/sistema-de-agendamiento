@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { EyeIcon, EyeSlashIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import Turnstile from '@/components/Turnstile';
 import { toast } from 'react-hot-toast';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const {
     register,
@@ -134,18 +136,13 @@ export default function LoginPage() {
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <input
-              id="remember"
-              type="checkbox"
-              className="h-4 w-4 rounded bg-dark-800 border-dark-600 text-primary-500 focus:ring-primary-500 focus:ring-offset-dark-900"
+          <div className="flex items-center gap-3">
+            <ToggleSwitch
+              checked={rememberMe}
+              onChange={setRememberMe}
+              size="sm"
             />
-            <label
-              htmlFor="remember"
-              className="ml-2 block text-sm text-gray-400"
-            >
-              Recordarme
-            </label>
+            <span className="text-sm text-gray-400">Recordarme</span>
           </div>
 
           <Link

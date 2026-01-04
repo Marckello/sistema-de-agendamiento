@@ -10,10 +10,13 @@ import {
   ClockIcon,
   ChatBubbleOvalLeftEllipsisIcon,
   GlobeAltIcon,
+  EyeIcon,
+  EyeSlashIcon,
 } from '@heroicons/react/24/outline';
 import { settingsService } from '@/services/settings';
 import { TenantSettings } from '@/types';
 import WhatsAppSettings from '@/components/settings/WhatsAppSettings';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 type SettingsTab = 'general' | 'branding' | 'social' | 'booking' | 'notifications' | 'schedule' | 'whatsapp';
 
@@ -368,7 +371,7 @@ function BrandingSettings({ settings }: { settings?: any }) {
 function BookingSettings({ settings }: { settings?: any }) {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
-  const { register, handleSubmit, reset, formState: { isDirty }, watch } = useForm({
+  const { register, handleSubmit, reset, formState: { isDirty }, watch, setValue } = useForm({
     defaultValues: {
       allowOnlineBooking: true,
       requireConfirmation: false,
@@ -379,6 +382,7 @@ function BookingSettings({ settings }: { settings?: any }) {
   });
 
   const allowOnlineBooking = watch('allowOnlineBooking');
+  const requireConfirmation = watch('requireConfirmation');
   const bookingUrl = settings?.slug 
     ? `${window.location.origin}/book/${settings.slug}`
     : '';
@@ -478,13 +482,8 @@ function BookingSettings({ settings }: { settings?: any }) {
             </div>
           )}
 
-          <div className="space-y-3">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                {...register('allowOnlineBooking')}
-                className="w-5 h-5 text-primary-600 rounded"
-              />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <div>
                 <span className="font-medium text-gray-900 dark:text-white">
                   Permitir reservas online
@@ -493,14 +492,13 @@ function BookingSettings({ settings }: { settings?: any }) {
                   Los clientes pueden reservar citas desde la página pública
                 </p>
               </div>
-            </label>
-
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                {...register('requireConfirmation')}
-                className="w-5 h-5 text-primary-600 rounded"
+              <ToggleSwitch
+                checked={allowOnlineBooking}
+                onChange={(val) => setValue('allowOnlineBooking', val, { shouldDirty: true })}
               />
+            </div>
+
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
               <div>
                 <span className="font-medium text-gray-900 dark:text-white">
                   Requerir confirmación manual
@@ -509,7 +507,11 @@ function BookingSettings({ settings }: { settings?: any }) {
                   Las citas quedarán pendientes hasta que las confirmes
                 </p>
               </div>
-            </label>
+              <ToggleSwitch
+                checked={requireConfirmation}
+                onChange={(val) => setValue('requireConfirmation', val, { shouldDirty: true })}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
@@ -546,27 +548,50 @@ function BookingSettings({ settings }: { settings?: any }) {
 // Notification Settings
 function NotificationSettings({ settings }: { settings?: any }) {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, reset, formState: { isDirty } } = useForm({
+  const [showSmtpPassword, setShowSmtpPassword] = useState(false);
+  const { register, handleSubmit, reset, formState: { isDirty }, watch, setValue } = useForm({
     defaultValues: {
       emailEnabled: true,
-      smsEnabled: false,
+      notifyClients: true,
+      notifyEmployees: true,
       reminderHours: 24,
+      // SMTP
+      smtpEnabled: false,
+      smtpHost: '',
+      smtpPort: 587,
+      smtpUser: '',
+      smtpPass: '',
+      smtpFrom: '',
+      smtpFromName: '',
     },
   });
+
+  const emailEnabled = watch('emailEnabled');
+  const notifyClients = watch('notifyClients');
+  const notifyEmployees = watch('notifyEmployees');
+  const smtpEnabled = watch('smtpEnabled');
 
   // Cargar datos cuando settings cambie
   useEffect(() => {
     if (settings) {
       reset({
         emailEnabled: settings.emailEnabled ?? true,
-        smsEnabled: settings.smsEnabled ?? false,
+        notifyClients: settings.notifyClients ?? true,
+        notifyEmployees: settings.notifyEmployees ?? true,
         reminderHours: settings.reminderHours ?? 24,
+        smtpEnabled: settings.smtpEnabled ?? false,
+        smtpHost: settings.smtpHost ?? '',
+        smtpPort: settings.smtpPort ?? 587,
+        smtpUser: settings.smtpUser ?? '',
+        smtpPass: settings.smtpPass ?? '',
+        smtpFrom: settings.smtpFrom ?? '',
+        smtpFromName: settings.smtpFromName ?? '',
       });
     }
   }, [settings, reset]);
 
   const mutation = useMutation({
-    mutationFn: (data: TenantSettings['notifications']) => settingsService.updateNotifications(data),
+    mutationFn: (data: any) => settingsService.updateNotifications(data),
     onSuccess: () => {
       toast.success('Configuración guardada');
       queryClient.invalidateQueries({ queryKey: ['settings'] });
@@ -577,64 +602,223 @@ function NotificationSettings({ settings }: { settings?: any }) {
   });
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-          Notificaciones
-        </h2>
+    <div className="space-y-6">
+      {/* Notificaciones por Email */}
+      <div className="card">
+        <div className="card-header">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Notificaciones por Email
+          </h2>
+        </div>
+        <form onSubmit={handleSubmit((data) => mutation.mutate(data))}>
+          <div className="card-body space-y-6">
+            {/* Switch principal */}
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              <div>
+                <span className="font-medium text-gray-900 dark:text-white">
+                  Activar notificaciones por email
+                </span>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Enviar confirmaciones y recordatorios por correo electrónico
+                </p>
+              </div>
+              <ToggleSwitch 
+                checked={emailEnabled} 
+                onChange={(val) => setValue('emailEnabled', val, { shouldDirty: true })} 
+              />
+            </div>
+
+            {emailEnabled && (
+              <>
+                {/* Destinatarios */}
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    ¿A quién enviar notificaciones?
+                  </h3>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <div>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          Notificar a clientes
+                        </span>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Confirmaciones, recordatorios y cambios de cita
+                        </p>
+                      </div>
+                      <ToggleSwitch 
+                        checked={notifyClients} 
+                        onChange={(val) => setValue('notifyClients', val, { shouldDirty: true })} 
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                      <div>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          Notificar a empleados
+                        </span>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          Nuevas citas asignadas y cambios en su agenda
+                        </p>
+                      </div>
+                      <ToggleSwitch 
+                        checked={notifyEmployees} 
+                        onChange={(val) => setValue('notifyEmployees', val, { shouldDirty: true })} 
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Recordatorio */}
+                <div>
+                  <label className="label">Enviar recordatorio con antelación (horas)</label>
+                  <input 
+                    type="number" 
+                    {...register('reminderHours', { valueAsNumber: true })} 
+                    className="input max-w-xs" 
+                    min="1" 
+                    max="72"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Se enviará un recordatorio automático antes de cada cita
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <div className="card-footer flex justify-end">
+            <button
+              type="submit"
+              disabled={!isDirty || mutation.isPending}
+              className="btn-primary"
+            >
+              {mutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          </div>
+        </form>
       </div>
-      <form onSubmit={handleSubmit((data) => mutation.mutate(data as TenantSettings['notifications']))}>
-        <div className="card-body space-y-4">
-          <div className="space-y-3">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                {...register('emailEnabled')}
-                className="w-5 h-5 text-primary-600 rounded"
-              />
-              <div>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  Notificaciones por email
-                </span>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Enviar confirmaciones y recordatorios por email
-                </p>
-              </div>
-            </label>
 
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                {...register('smsEnabled')}
-                className="w-5 h-5 text-primary-600 rounded"
-              />
-              <div>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  Notificaciones por SMS
-                </span>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Enviar recordatorios por mensaje de texto
-                </p>
-              </div>
-            </label>
-          </div>
-
-          <div>
-            <label className="label">Enviar recordatorio con antelación (horas)</label>
-            <input type="number" {...register('reminderHours')} className="input max-w-xs" min="1" />
+      {/* Configuración SMTP */}
+      <div className="card">
+        <div className="card-header">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Servidor de Correo (SMTP)
+              </h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Configura tu propio servidor SMTP para enviar emails con tu dominio
+              </p>
+            </div>
+            <ToggleSwitch 
+              checked={smtpEnabled} 
+              onChange={(val) => setValue('smtpEnabled', val, { shouldDirty: true })} 
+            />
           </div>
         </div>
+        
+        {smtpEnabled && (
+          <form onSubmit={handleSubmit((data) => mutation.mutate(data))}>
+            <div className="card-body space-y-4">
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
+                  💡 <strong>Tip:</strong> Si no configuras SMTP, los emails se enviarán desde nuestro servidor por defecto.
+                </p>
+              </div>
 
-        <div className="card-footer flex justify-end">
-          <button
-            type="submit"
-            disabled={!isDirty || mutation.isPending}
-            className="btn-primary"
-          >
-            {mutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
-        </div>
-      </form>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Servidor SMTP</label>
+                  <input 
+                    {...register('smtpHost')} 
+                    className="input" 
+                    placeholder="smtp.gmail.com"
+                  />
+                </div>
+                <div>
+                  <label className="label">Puerto</label>
+                  <input 
+                    type="number"
+                    {...register('smtpPort', { valueAsNumber: true })} 
+                    className="input" 
+                    placeholder="587"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Usuario</label>
+                  <input 
+                    {...register('smtpUser')} 
+                    className="input" 
+                    placeholder="usuario@tudominio.com"
+                  />
+                </div>
+                <div>
+                  <label className="label">Contraseña</label>
+                  <div className="relative">
+                    <input 
+                      type={showSmtpPassword ? 'text' : 'password'}
+                      {...register('smtpPass')} 
+                      className="input pr-10" 
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSmtpPassword(!showSmtpPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showSmtpPassword ? (
+                        <EyeSlashIcon className="w-5 h-5" />
+                      ) : (
+                        <EyeIcon className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Email remitente</label>
+                  <input 
+                    type="email"
+                    {...register('smtpFrom')} 
+                    className="input" 
+                    placeholder="citas@tudominio.com"
+                  />
+                </div>
+                <div>
+                  <label className="label">Nombre remitente</label>
+                  <input 
+                    {...register('smtpFromName')} 
+                    className="input" 
+                    placeholder="Mi Negocio"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="card-footer flex justify-end gap-3">
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => toast('Función de prueba próximamente', { icon: 'ℹ️' })}
+              >
+                Enviar email de prueba
+              </button>
+              <button
+                type="submit"
+                disabled={!isDirty || mutation.isPending}
+                className="btn-primary"
+              >
+                {mutation.isPending ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
     </div>
   );
 }
@@ -721,15 +905,13 @@ function ScheduleSettings() {
               key={day.id}
               className="flex items-center gap-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-700/50"
             >
-              <label className="flex items-center gap-2 w-32 cursor-pointer">
-                <input
-                  type="checkbox"
+              <div className="flex items-center gap-3 w-40">
+                <ToggleSwitch
                   checked={localSchedule[index]?.isActive}
-                  onChange={(e) => handleChange(index, 'isActive', e.target.checked)}
-                  className="w-4 h-4 text-primary-600 rounded"
+                  onChange={(val) => handleChange(index, 'isActive', val)}
                 />
                 <span className="font-medium text-gray-900 dark:text-white">{day.label}</span>
-              </label>
+              </div>
               
               {localSchedule[index]?.isActive && (
                 <div className="flex items-center gap-2">
