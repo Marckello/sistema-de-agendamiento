@@ -1140,22 +1140,25 @@ function AISettings({ settings }: { settings?: any }) {
   const [aiActiveForTenant, setAiActiveForTenant] = useState(settings?.aiActiveForTenant ?? true);
   const [savingTenant, setSavingTenant] = useState(false);
 
-  // Fetch employees
+  // Fetch all users (employees)
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
-        const response = await fetch('/api/users?role=EMPLOYEE', {
+        const response = await fetch('/api/users', {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
           },
         });
         const data = await response.json();
+        // La respuesta tiene estructura { success: true, data: [...], pagination: {...} }
         if (data.success && Array.isArray(data.data)) {
           setEmployees(data.data);
+        } else if (data.data && Array.isArray(data.data)) {
+          setEmployees(data.data);
         } else if (Array.isArray(data)) {
-          // Handle case where response is the array directly
           setEmployees(data);
         } else {
+          console.log('Respuesta de usuarios:', data);
           setEmployees([]);
         }
       } catch (error) {

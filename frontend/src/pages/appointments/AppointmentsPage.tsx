@@ -11,7 +11,6 @@ import {
   PencilIcon,
   TrashIcon,
   ClockIcon,
-  ChevronUpDownIcon,
 } from '@heroicons/react/24/outline';
 import { appointmentService } from '@/services/appointments';
 import { Appointment, AppointmentStatus, AppointmentFilters } from '@/types';

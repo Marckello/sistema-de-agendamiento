@@ -1,7 +1,7 @@
 # CitasPro - Documentación Completa del Proyecto
 
-**Última actualización:** 3 de Enero de 2026  
-**Versión:** 1.5.0  
+**Última actualización:** 4 de Enero de 2026  
+**Versión:** 1.6.0  
 **Cliente:** Serrano Marketing  
 **Repositorio:** https://github.com/Marckello/sistema-de-agendamiento.git
 
@@ -521,6 +521,28 @@ model WorkSchedule {
 }
 ```
 
+### Modelo Tenant (Configuración IA - NUEVO v1.6.0)
+```prisma
+model Tenant {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  // ... otros campos
+  
+  // ⭐ CONFIGURACIÓN DE IA (Platform Admin)
+  aiEnabled         Boolean @default(false)  // Habilitado por Platform Admin
+  aiModel           String  @default("gpt-4o-mini")
+  aiMaxTokens       Int     @default(2000)
+  aiTemperature     Float   @default(0.7)
+  aiSystemPrompt    String? @db.Text
+  
+  // ⭐ CONTROL DE IA (Tenant)
+  aiActiveForTenant Boolean @default(true)   // Toggle del tenant
+  
+  @@map("tenants")
+}
+```
+
 ---
 
 ## 🔐 Variables de Entorno
@@ -673,6 +695,51 @@ function getOpenAI(): OpenAI {
   return openaiClient;
 }
 ```
+
+### Sistema de IA Multinivel (NUEVO v1.6.0)
+
+El acceso y configuración de IA se gestiona en 3 niveles jerárquicos:
+
+#### Nivel 1: Platform Admin (Configuración Global)
+En **Panel de Administración → Tenants → Editar Tenant** se configura:
+
+| Campo | Tipo | Default | Descripción |
+|-------|------|---------|-------------|
+| `aiEnabled` | Boolean | false | Habilita/deshabilita IA para el tenant |
+| `aiModel` | String | "gpt-4o-mini" | Modelo de OpenAI a usar |
+| `aiMaxTokens` | Int | 2000 | Tokens máximos por respuesta |
+| `aiTemperature` | Float | 0.7 | Temperatura del modelo (0-1) |
+| `aiSystemPrompt` | String? | null | Prompt personalizado (futuro) |
+
+**Modelos disponibles:**
+- `gpt-4o-mini` - Recomendado (rápido y económico)
+- `gpt-4o` - Más capaz
+- `gpt-4-turbo` - Máxima capacidad
+
+#### Nivel 2: Tenant Admin (Activación Local)
+En **Configuración → Inteligencia Artificial** el tenant puede:
+
+| Función | Descripción |
+|---------|-------------|
+| **Toggle principal** | Activar/desactivar IA para su negocio (solo si admin lo habilitó) |
+| **Switches por empleado** | Habilitar/deshabilitar IA para cada empleado individualmente |
+| **Info Box** | Muestra qué puede hacer el asistente |
+| **Tips de uso** | Ejemplos de comandos para el asistente |
+
+⚠️ Si el Platform Admin no habilitó IA para el tenant, aparece mensaje: *"La Inteligencia Artificial no está habilitada para tu cuenta. Contacta al administrador de la plataforma para activar esta función."*
+
+#### Nivel 3: Usuario/Empleado
+El campo `canUseAI` en el modelo User determina si el empleado específico puede usar el chat IA.
+
+#### Archivos del Sistema IA Multinivel
+
+| Archivo | Descripción |
+|---------|-------------|
+| `frontend/src/pages/admin/TenantsManagement.tsx` | UI de configuración IA para Platform Admin |
+| `frontend/src/pages/settings/SettingsPage.tsx` | UI de configuración IA para Tenant (AISettings component) |
+| `backend/src/controllers/admin.controller.ts` | Maneja updates de campos IA en Tenant |
+| `backend/src/controllers/settings.controller.ts` | Devuelve aiEnabled, aiActiveForTenant |
+| `backend/prisma/schema.prisma` | Campos IA en modelo Tenant |
 
 ---
 
@@ -1010,6 +1077,22 @@ const firebaseConfig = {
 **Problema**: El Sidebar usaba un logo estático en lugar del logo del tenant.
 **Solución**: Agregar query para obtener settings del tenant y mostrar logo/nombre dinámicamente.
 
+### 13. Modal de edición no actualizaba datos al cambiar entre registros (v1.6.0)
+**Problema**: Al editar un tenant/plan y luego cambiar a otro, el modal mostraba los datos del anterior.
+**Causa**: Uso de `defaultValue` en lugar de `value` en selects, y falta de `key` prop para forzar re-render.
+**Solución**: 
+- Cambiar `defaultValue` a `value` en select de Plan (TenantsManagement.tsx)
+- Agregar `key={selectedTenant.id}` al modal de tenants
+- Agregar `key={editingPlan?.id || 'new'}` al modal de planes
+
+### 14. Error "employees.map is not a function" en AISettings (v1.6.0)
+**Problema**: Al cargar la sección de IA en configuración, el código intentaba mapear `employees` antes de verificar que fuera un array.
+**Solución**: Agregar verificación `Array.isArray()` antes de mapear y múltiples checks para manejar distintas estructuras de respuesta API.
+
+### 15. Empleados no cargaban en configuración de IA (v1.6.0)
+**Problema**: El fetch de usuarios usaba filtro `?role=EMPLOYEE` pero algunos usuarios tienen roles diferentes.
+**Solución**: Cambiar fetch de `/api/users?role=EMPLOYEE` a `/api/users` (sin filtro de rol).
+
 ---
 
 ## 💻 Comandos Útiles
@@ -1171,8 +1254,9 @@ Ver archivo `.credentials-private.md` (NO en GitHub, en .gitignore)
 | Gradientes | Rosa-púrpura para títulos |
 | OpenAI | Lazy initialization obligatoria |
 | Permisos IA | Campo `canUseAI` en User |
+| **Config IA Tenant** | `aiEnabled`, `aiActiveForTenant` en Tenant |
 
-### Estado Actual (2 Enero 2026)
+### Estado Actual (4 Enero 2026)
 
 ✅ **Completado:**
 - Sistema multi-tenant funcional
@@ -1194,6 +1278,10 @@ Ver archivo `.credentials-private.md` (NO en GitHub, en .gitignore)
 - **Platform Admin separado** con login en `/control/acceso`
 - **Selector de código de país** en registro (15 países)
 - **Desplegado en producción** (https://citas.serrano.marketing)
+- **🆕 Sistema IA Multinivel** (Platform Admin → Tenant → Empleado)
+- **🆕 Configuración IA en Panel Admin** (modelo, tokens, temperatura)
+- **🆕 Configuración IA en Tenant** (toggle, por empleado)
+- **🆕 Persistencia de modales** corregida en admin panel
 
 🔄 **Pendiente:**
 - [ ] Aplicar colores personalizados a la UI dinámicamente
@@ -1202,12 +1290,55 @@ Ver archivo `.credentials-private.md` (NO en GitHub, en .gitignore)
 - [ ] Pagos online
 - [ ] Reportes exportables
 - [ ] Multi-idioma
+- [ ] Sistema de prompts personalizados para IA
 
 ---
 
 ## 🚨 ÚLTIMA SESIÓN - Pasos para Retomar
 
-### Lo Último que se Hizo (3 Enero 2026 - Sesión Completa)
+### Lo Último que se Hizo (4 Enero 2026 - Sesión Completa)
+
+#### Sistema de IA Multinivel (NUEVO)
+1. ✅ **Configuración IA en Panel Admin** - Modelo, tokens, temperatura por tenant
+2. ✅ **Campos IA en Prisma schema** - aiEnabled, aiModel, aiMaxTokens, aiTemperature, aiActiveForTenant
+3. ✅ **Configuración IA para Tenant** - Toggle principal + switches por empleado
+4. ✅ **Info box** con capacidades del asistente IA
+5. ✅ **Tips de uso** con ejemplos de comandos
+6. ✅ **Removido toggle IA** del modal de usuarios (ahora en sección dedicada)
+
+#### Correcciones de Persistencia de Modales
+7. ✅ **TenantsManagement.tsx** - Cambiado `defaultValue` a `value` en select Plan
+8. ✅ **TenantsManagement.tsx** - Agregado `key={selectedTenant.id}` al modal
+9. ✅ **PlansManagement.tsx** - Agregado `key={editingPlan?.id || 'new'}` al modal
+
+#### Correcciones de Errores
+10. ✅ **Error employees.map** - Agregada verificación `Array.isArray()` 
+11. ✅ **Empleados no cargaban** - Removido filtro `?role=EMPLOYEE` del fetch
+
+#### Archivos Modificados Esta Sesión
+
+| Archivo | Cambio |
+|---------|--------|
+| `backend/prisma/schema.prisma` | Agregados campos IA a modelo Tenant |
+| `backend/src/controllers/admin.controller.ts` | Manejo de campos IA en updateTenant |
+| `backend/src/controllers/settings.controller.ts` | Respuesta incluye aiEnabled, aiActiveForTenant |
+| `backend/src/utils/validators.ts` | Agregado aiActiveForTenant a schema |
+| `frontend/src/pages/settings/SettingsPage.tsx` | Agregado AISettings component |
+| `frontend/src/pages/admin/TenantsManagement.tsx` | Sección IA + fix modal persistence |
+| `frontend/src/pages/admin/PlansManagement.tsx` | Fix modal persistence con key prop |
+| `frontend/src/pages/users/UsersPage.tsx` | Removido toggle canUseAI |
+| `frontend/src/services/admin.ts` | Campos IA en interface updateTenant |
+
+#### Commit de Esta Sesión
+```
+Commit: 23313e2
+Mensaje: feat: sistema IA multinivel, fix persistencia modales, corregir carga empleados
+Archivos: 29 changed, +1025 -186 lines
+```
+
+---
+
+### Sesión Anterior (3 Enero 2026)
 
 #### Seguridad y Autenticación
 1. ✅ Implementado Cloudflare Turnstile en login de usuarios
@@ -1221,10 +1352,7 @@ Ver archivo `.credentials-private.md` (NO en GitHub, en .gitignore)
 7. ✅ Creada página `frontend/src/pages/admin/AdminLoginPage.tsx`
 8. ✅ Ruta cambiada de `/admin/login` a `/control/acceso` (por seguridad)
 9. ✅ Removido enlace "Ir al Panel Admin" del Sidebar de tenants
-10. ✅ Platform Admin creado en producción:
-    - Email: `marco@serrano.marketing`
-    - Password: `CSerrano6024502025*`
-    - ID: `80dd5fda-670b-4b77-a555-7c91582a9dab`
+10. ✅ Platform Admin creado en producción
 
 #### Registro de Usuarios
 11. ✅ Selector de código de país con 15 opciones (MX, US, ES, etc.)
@@ -1263,7 +1391,7 @@ Ver archivo `.credentials-private.md` (NO en GitHub, en .gitignore)
 ### Para Continuar Desarrollo Local
 
 ```powershell
-# Terminal 1 - Base de datos
+# Terminal 1 - Base de datos (si usa Docker local)
 docker start citas_db
 
 # Terminal 2 - Backend
@@ -1278,7 +1406,7 @@ npm run dev
 ### URLs de Desarrollo
 | Servicio | URL |
 |----------|-----|
-| Frontend | http://localhost:5173 |
+| Frontend | http://localhost:3000 |
 | Backend | http://localhost:4000/api |
 | Health Check | http://localhost:4000/api/health |
 
@@ -1295,6 +1423,16 @@ npm run dev
 2. Turnstile aparece y valida correctamente
 3. Platform Admin puede acceder en /control/acceso
 4. Los tenants NO pueden ver el enlace al Panel Admin
+5. **🆕 Configuración IA visible en Panel Admin → Tenants**
+6. **🆕 Configuración IA visible en Settings → Inteligencia Artificial**
+
+### Base de Datos de Desarrollo/Producción
+```
+Host: 62.171.186.9
+Puerto: 5432
+Usuario: postgres
+Base de datos: agenda
+```
 
 ### Archivo de Credenciales Privadas
 El archivo `.credentials-private.md` contiene todas las credenciales de producción:
@@ -1309,6 +1447,26 @@ El archivo `.credentials-private.md` contiene todas las credenciales de producci
 
 ---
 
+## 🔮 Próximos Pasos Sugeridos
+
+### Prioridad Alta
+1. **Implementar prompt personalizado por tenant** - Agregar UI para `aiSystemPrompt`
+2. **Sincronizar colores de branding** - Aplicar `primaryColor` y `accentColor` a toda la UI
+3. **Pruebas de integración IA** - Verificar que los niveles de control funcionan correctamente
+
+### Prioridad Media
+4. **Recordatorios WhatsApp** - Completar integración y testing
+5. **Dashboard de uso de IA** - Estadísticas de tokens usados por tenant
+6. **Límites de uso de IA** - Control de tokens mensuales por plan
+
+### Prioridad Baja
+7. **Multi-idioma** - i18n para español/inglés
+8. **Reportes exportables** - PDF/Excel de citas y clientes
+9. **Pagos online** - Integración con Stripe/PayPal
+
+---
+
 **Documento mantenido por GitHub Copilot**  
 **Proyecto: CitasPro - Gestión de Citas**  
-**Cliente: Serrano Marketing**
+**Cliente: Serrano Marketing**  
+**Última sesión: 4 de Enero de 2026**

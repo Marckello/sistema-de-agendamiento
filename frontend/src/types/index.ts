@@ -297,6 +297,8 @@ export interface DashboardStats {
   cancelledAppointments: number;
   noShowAppointments: number;
   totalRevenue: number;
+  serviceRevenue: number;
+  extrasRevenue: number;
   averagePerAppointment: number;
   newClients: number;
   returningClients: number;
@@ -468,6 +470,7 @@ export interface TenantSettings {
     country?: string;
     timezone: string;
     currency: string;
+    aiActiveForTenant?: boolean;
   };
   branding: {
     logo?: string;

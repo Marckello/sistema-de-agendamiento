@@ -9,7 +9,7 @@ export const settingsService = {
   },
 
   // Update general settings
-  updateGeneral: async (data: TenantSettings['general']): Promise<ApiResponse<void>> => {
+  updateGeneral: async (data: Partial<TenantSettings['general']>): Promise<ApiResponse<void>> => {
     const response = await api.put('/settings/general', data);
     return response.data;
   },

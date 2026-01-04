@@ -90,7 +90,7 @@ export default function DashboardPage() {
   const topServices = topServicesData?.data || [];
   // upcomingData.data is { appointments: [], pagination: {} }
   const upcomingAppointments = upcomingData?.data?.appointments || [];
-  const tenantCurrency = settingsData?.data?.currency || 'USD';
+  const tenantCurrency = settingsData?.data?.general?.currency || 'USD';
 
   // Format chart data
   const chartData = appointmentsByDay.map((item: any) => ({
