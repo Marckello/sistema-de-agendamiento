@@ -209,12 +209,33 @@ export default function RegisterPage() {
     if (!registrationPhone) return;
 
     try {
-      // Formatear número si es necesario
-      let phoneNumber = registrationPhone;
-      if (!phoneNumber.startsWith('+')) {
-        // Asumir México si no tiene código de país
-        phoneNumber = '+52' + phoneNumber.replace(/\D/g, '');
+      // Formatear número a E.164
+      let phoneNumber = registrationPhone.replace(/\D/g, ''); // Solo dígitos
+      
+      // Si empieza con código de país (52 para México), agregamos el +
+      if (phoneNumber.startsWith('52') && phoneNumber.length === 12) {
+        phoneNumber = '+' + phoneNumber;
+      } else if (phoneNumber.startsWith('1') && phoneNumber.length === 11) {
+        // USA/Canada
+        phoneNumber = '+' + phoneNumber;
+      } else if (phoneNumber.length === 10) {
+        // Asumir México si son 10 dígitos
+        phoneNumber = '+52' + phoneNumber;
+      } else if (!registrationPhone.startsWith('+')) {
+        // Si no tiene + y no es un formato reconocido, agregar +52
+        phoneNumber = '+52' + phoneNumber;
+      } else {
+        // Ya tiene + al inicio
+        phoneNumber = '+' + phoneNumber;
       }
+      
+      // Validar longitud (E.164 max 15 dígitos incluyendo código de país)
+      if (phoneNumber.length > 16 || phoneNumber.length < 10) {
+        toast.error('Número de teléfono inválido. Ingresa un número de 10 dígitos.');
+        return;
+      }
+      
+      console.log('Formatted phone number:', phoneNumber);
 
       if (!window.recaptchaVerifier) {
         setupRecaptcha();
