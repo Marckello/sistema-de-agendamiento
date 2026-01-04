@@ -15,6 +15,7 @@ export interface User {
   specialty?: string;
   title?: string;
   tenantId: string;
+  isPlatformAdmin?: boolean; // Solo true para administradores de la plataforma
   createdAt: string;
   updatedAt: string;
 }

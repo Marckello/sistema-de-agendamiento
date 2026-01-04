@@ -79,7 +79,28 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
 // Login de Platform Admin
 export const loginAdmin = asyncHandler(async (req: Request, res: Response) => {
-  const data = loginSchema.parse(req.body);
+  const { turnstileToken, ...loginData } = req.body;
+  const data = loginSchema.parse(loginData);
+  
+  // Verificar Turnstile si está configurado
+  if (config.turnstile?.secretKey) {
+    if (!turnstileToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verificación de seguridad requerida',
+      });
+    }
+    
+    const clientIp = req.ip || req.socket.remoteAddress;
+    const isValidToken = await verifyTurnstileToken(turnstileToken, clientIp);
+    
+    if (!isValidToken) {
+      return res.status(403).json({
+        success: false,
+        message: 'Verificación de seguridad fallida. Por favor intenta de nuevo.',
+      });
+    }
+  }
   
   const result = await loginPlatformAdmin(data.email, data.password);
   

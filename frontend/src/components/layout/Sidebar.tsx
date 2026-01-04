@@ -1,4 +1,4 @@
-import { NavLink, useLocation, Link } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { settingsService } from '@/services/settings';
@@ -12,7 +12,6 @@ import {
   BuildingStorefrontIcon,
   UserGroupIcon,
   SparklesIcon,
-  ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -144,22 +143,6 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
                 </NavLink>
               );
             })}
-            
-            {/* Admin Panel Link - Solo para SUPER_ADMIN */}
-            {user?.role === 'SUPER_ADMIN' && (
-              <div className="pt-6">
-                <Link
-                  to="/admin"
-                  className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 transition-all duration-200 group border border-purple-500/20"
-                >
-                  <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                  Ir al Panel Admin
-                  <div className="ml-auto">
-                    <ArrowRightOnRectangleIcon className="w-4 h-4" />
-                  </div>
-                </Link>
-              </div>
-            )}
           </nav>
 
           {/* User info */}

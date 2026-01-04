@@ -39,12 +39,13 @@ import ProfilePage from '@/pages/profile/ProfilePage';
 // Public Booking
 import PublicBookingPage from '@/pages/booking/PublicBookingPage';
 
-// Admin Pages (Super Admin only - Independent)
+// Admin Pages (Platform Admin only - Independent)
 import AdminDashboard from '@/pages/admin/AdminDashboard';
 import TenantsManagement from '@/pages/admin/TenantsManagement';
 import PlansManagement from '@/pages/admin/PlansManagement';
 import ActivityPage from '@/pages/admin/ActivityPage';
 import PlatformSettings from '@/pages/admin/PlatformSettings';
+import AdminLoginPage from '@/pages/admin/AdminLoginPage';
 
 // Protected Route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -61,20 +62,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Admin Route wrapper (Super Admin only)
+// Admin Route wrapper (Platform Admin only)
 function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  // Verificar si hay token de Platform Admin
+  const isPlatformAdmin = localStorage.getItem('isPlatformAdmin') === 'true';
+  const hasToken = !!localStorage.getItem('accessToken');
 
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-
-  if (user?.role !== 'SUPER_ADMIN') {
-    return <Navigate to="/dashboard" replace />;
+  if (!hasToken || !isPlatformAdmin) {
+    return <Navigate to="/admin/login" replace />;
   }
 
   return <>{children}</>;
@@ -149,7 +144,10 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
       </Route>
 
-      {/* Admin Routes (Super Admin only - Independent Layout) */}
+      {/* Admin Login - Ruta pública separada */}
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+
+      {/* Admin Routes (Platform Admin only - Independent Layout) */}
       <Route
         element={
           <AdminRoute>
