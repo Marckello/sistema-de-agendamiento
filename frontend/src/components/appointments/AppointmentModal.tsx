@@ -177,6 +177,10 @@ export default function AppointmentModal({
   const employees = extractArray(employeesData?.data, 'users');
   const extras = extractArray(extrasData?.data);
 
+  // Debug: ver qué extras llegan
+  console.log('extrasData:', extrasData);
+  console.log('extras array:', extras);
+
   // Helper para manejar selección de extras
   const toggleExtra = (extraId: string) => {
     setSelectedExtras(prev => {
@@ -535,7 +539,7 @@ export default function AppointmentModal({
                   {extras.length > 0 && (
                     <div>
                       <label className="label">Extras (opcional)</label>
-                      <div className="space-y-2 max-h-32 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                      <div className="space-y-2 max-h-48 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
                         {extras.map((extra: Extra) => (
                           <label
                             key={extra.id}
