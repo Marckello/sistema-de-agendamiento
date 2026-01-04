@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { useAuth } from '@/context/AuthContext';
 import { EyeIcon, EyeSlashIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import Turnstile from '@/components/Turnstile';
+import { toast } from 'react-hot-toast';
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
 interface LoginFormData {
   email: string;
@@ -13,6 +17,7 @@ export default function LoginPage() {
   const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
 
   const {
     register,
@@ -20,10 +25,24 @@ export default function LoginPage() {
     formState: { errors },
   } = useForm<LoginFormData>();
 
+  const handleTurnstileVerify = useCallback((token: string) => {
+    setTurnstileToken(token);
+  }, []);
+
+  const handleTurnstileError = useCallback(() => {
+    setTurnstileToken(null);
+    toast.error('Error de verificación. Por favor recarga la página.');
+  }, []);
+
   const onSubmit = async (data: LoginFormData) => {
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      toast.error('Por favor completa la verificación de seguridad');
+      return;
+    }
+
     setIsLoading(true);
     try {
-      await login(data);
+      await login({ ...data, turnstileToken: turnstileToken || undefined });
     } catch (error) {
       // Error is handled in AuthContext
     } finally {
@@ -137,9 +156,19 @@ export default function LoginPage() {
           </Link>
         </div>
 
+        {/* Cloudflare Turnstile */}
+        {TURNSTILE_SITE_KEY && (
+          <Turnstile
+            siteKey={TURNSTILE_SITE_KEY}
+            onVerify={handleTurnstileVerify}
+            onError={handleTurnstileError}
+            onExpire={() => setTurnstileToken(null)}
+          />
+        )}
+
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isLoading || (TURNSTILE_SITE_KEY && !turnstileToken)}
           className="w-full btn-primary py-3.5 text-base"
         >
           {isLoading ? (

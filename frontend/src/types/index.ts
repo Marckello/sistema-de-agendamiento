@@ -22,6 +22,7 @@ export interface User {
 export interface LoginCredentials {
   email: string;
   password: string;
+  turnstileToken?: string;
 }
 
 export interface RegisterData {
