@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format, startOfDay, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, getDay, addMonths, subMonths } from 'date-fns';
@@ -127,16 +127,6 @@ export default function PublicBookingPage() {
     notes: '',
   });
 
-  // Set tenant header for public API calls
-  useEffect(() => {
-    if (subdomain) {
-      api.defaults.headers.common['X-Tenant-Subdomain'] = subdomain;
-    }
-    return () => {
-      delete api.defaults.headers.common['X-Tenant-Subdomain'];
-    };
-  }, [subdomain]);
-
   // Fetch tenant info
   const { data: tenantData, isLoading: loadingTenant, error: tenantError } = useQuery({
     queryKey: ['public-tenant', subdomain],
@@ -151,7 +141,9 @@ export default function PublicBookingPage() {
   const { data: servicesData } = useQuery({
     queryKey: ['public-services', subdomain],
     queryFn: async () => {
-      const response = await api.get('/public/services');
+      const response = await api.get('/public/services', {
+        headers: { 'X-Tenant-Subdomain': subdomain },
+      });
       return response.data;
     },
     enabled: !!subdomain,
@@ -161,7 +153,9 @@ export default function PublicBookingPage() {
   const { data: extrasData } = useQuery({
     queryKey: ['public-extras', subdomain],
     queryFn: async () => {
-      const response = await api.get('/public/extras');
+      const response = await api.get('/public/extras', {
+        headers: { 'X-Tenant-Subdomain': subdomain },
+      });
       return response.data;
     },
     enabled: !!subdomain,
@@ -172,6 +166,7 @@ export default function PublicBookingPage() {
     queryKey: ['public-times', subdomain, selectedEmployee?.id, selectedDate, selectedService?.id],
     queryFn: async () => {
       const response = await api.get('/public/availability', {
+        headers: { 'X-Tenant-Subdomain': subdomain },
         params: {
           employeeId: selectedEmployee?.id,
           date: format(selectedDate!, 'yyyy-MM-dd'),
@@ -193,6 +188,8 @@ export default function PublicBookingPage() {
         time: selectedTime,
         client: clientData,
         extras: selectedExtras,
+      }, {
+        headers: { 'X-Tenant-Subdomain': subdomain },
       });
       return response.data;
     },
