@@ -367,7 +367,8 @@ function BrandingSettings({ settings }: { settings?: any }) {
 // Booking Settings
 function BookingSettings({ settings }: { settings?: any }) {
   const queryClient = useQueryClient();
-  const { register, handleSubmit, reset, formState: { isDirty } } = useForm({
+  const [copied, setCopied] = useState(false);
+  const { register, handleSubmit, reset, formState: { isDirty }, watch } = useForm({
     defaultValues: {
       allowOnlineBooking: true,
       requireConfirmation: false,
@@ -376,6 +377,18 @@ function BookingSettings({ settings }: { settings?: any }) {
       cancellationPolicy: '',
     },
   });
+
+  const allowOnlineBooking = watch('allowOnlineBooking');
+  const bookingUrl = settings?.slug 
+    ? `${window.location.origin}/book/${settings.slug}`
+    : '';
+
+  const copyUrl = () => {
+    navigator.clipboard.writeText(bookingUrl);
+    setCopied(true);
+    toast.success('URL copiada al portapapeles');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   // Cargar datos cuando settings cambie
   useEffect(() => {
@@ -410,6 +423,61 @@ function BookingSettings({ settings }: { settings?: any }) {
       </div>
       <form onSubmit={handleSubmit((data) => mutation.mutate(data as TenantSettings['booking']))}>
         <div className="card-body space-y-4">
+          {/* URL Pública de Reservas */}
+          {bookingUrl && (
+            <div className={`p-4 rounded-xl border ${allowOnlineBooking ? 'bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800' : 'bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Tu URL pública de reservas:
+                  </p>
+                  <p className="text-sm font-mono text-primary-600 dark:text-primary-400 truncate">
+                    {bookingUrl}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={copyUrl}
+                    className="btn-secondary flex items-center gap-2 whitespace-nowrap"
+                  >
+                    {copied ? (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        Copiado
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Copiar
+                      </>
+                    )}
+                  </button>
+                  <a
+                    href={bookingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary flex items-center gap-2 whitespace-nowrap"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                    Ver
+                  </a>
+                </div>
+              </div>
+              {!allowOnlineBooking && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                  ⚠️ Las reservas online están desactivadas. Actívalas para que tus clientes puedan agendar.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="space-y-3">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
