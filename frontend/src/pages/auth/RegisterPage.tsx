@@ -343,11 +343,6 @@ export default function RegisterPage() {
     }
   };
 
-  // Omitir verificación de teléfono
-  const skipPhoneVerification = async () => {
-    await completeRegistration(false);
-  };
-
   // Renderizar código de entrada
   const renderCodeInput = (
     codeArray: string[],
@@ -454,7 +449,7 @@ export default function RegisterPage() {
 
           <div>
             <label htmlFor="phone" className="label">
-              Teléfono <span className="text-gray-400">(para verificación SMS)</span>
+              Teléfono <span className="text-red-500">*</span>
             </label>
             <div className="flex">
               <select
@@ -472,12 +467,13 @@ export default function RegisterPage() {
                 id="phone"
                 type="tel"
                 {...register('phone', {
+                  required: 'El teléfono es requerido para verificación SMS',
                   pattern: {
                     value: /^\d{10}$/,
                     message: 'Ingresa exactamente 10 dígitos'
                   }
                 })}
-                className="input rounded-l-none flex-1"
+                className={`input rounded-l-none flex-1 ${errors.phone ? 'input-error' : ''}`}
                 placeholder="5512345678"
                 maxLength={10}
               />
@@ -787,13 +783,6 @@ export default function RegisterPage() {
             </button>
           )}
         </div>
-
-        <button
-          onClick={skipPhoneVerification}
-          className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-        >
-          Omitir verificación de teléfono →
-        </button>
 
         {/* Contenedor invisible para reCAPTCHA */}
         <div ref={recaptchaContainerRef} id="recaptcha-container"></div>
