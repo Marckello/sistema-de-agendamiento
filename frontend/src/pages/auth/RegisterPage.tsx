@@ -24,7 +24,27 @@ interface RegisterFormData {
   tenantName: string;
   tenantSubdomain: string;
   phone?: string;
+  countryCode?: string;
 }
+
+// Lista de países con códigos telefónicos
+const COUNTRY_CODES = [
+  { code: '+52', country: 'MX', flag: '🇲🇽', name: 'México' },
+  { code: '+1', country: 'US', flag: '🇺🇸', name: 'Estados Unidos' },
+  { code: '+34', country: 'ES', flag: '🇪🇸', name: 'España' },
+  { code: '+57', country: 'CO', flag: '🇨🇴', name: 'Colombia' },
+  { code: '+54', country: 'AR', flag: '🇦🇷', name: 'Argentina' },
+  { code: '+56', country: 'CL', flag: '🇨🇱', name: 'Chile' },
+  { code: '+51', country: 'PE', flag: '🇵🇪', name: 'Perú' },
+  { code: '+58', country: 'VE', flag: '🇻🇪', name: 'Venezuela' },
+  { code: '+593', country: 'EC', flag: '🇪🇨', name: 'Ecuador' },
+  { code: '+502', country: 'GT', flag: '🇬🇹', name: 'Guatemala' },
+  { code: '+503', country: 'SV', flag: '🇸🇻', name: 'El Salvador' },
+  { code: '+504', country: 'HN', flag: '🇭🇳', name: 'Honduras' },
+  { code: '+505', country: 'NI', flag: '🇳🇮', name: 'Nicaragua' },
+  { code: '+506', country: 'CR', flag: '🇨🇷', name: 'Costa Rica' },
+  { code: '+507', country: 'PA', flag: '🇵🇦', name: 'Panamá' },
+];
 
 type RegistrationStep = 'form' | 'verify-email' | 'verify-phone' | 'complete';
 
@@ -37,6 +57,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [registrationEmail, setRegistrationEmail] = useState('');
   const [registrationPhone, setRegistrationPhone] = useState('');
+  const [selectedCountryCode, setSelectedCountryCode] = useState('+52'); // México por defecto
   const [emailCode, setEmailCode] = useState(['', '', '', '', '', '']);
   const [phoneCode, setPhoneCode] = useState(['', '', '', '', '', '']);
   const [countdown, setCountdown] = useState(0);
@@ -99,21 +120,24 @@ export default function RegisterPage() {
   const onSubmitForm = async (data: RegisterFormData) => {
     setIsLoading(true);
     try {
+      // Formatear teléfono completo con código de país
+      const fullPhone = data.phone ? `${selectedCountryCode}${data.phone.replace(/\D/g, '')}` : '';
+      
       const response = await verificationService.initiateRegistration({
         name: data.tenantName,
         slug: data.tenantSubdomain,
         email: data.email,
-        phone: data.phone,
+        phone: fullPhone,
         adminEmail: data.email,
         adminPassword: data.password,
         adminFirstName: data.firstName,
         adminLastName: data.lastName,
-        adminPhone: data.phone,
+        adminPhone: fullPhone,
       });
 
       if (response.success) {
         setRegistrationEmail(data.email);
-        setRegistrationPhone(data.phone || '');
+        setRegistrationPhone(fullPhone);
         setNeedsPhoneVerification(response.data?.requiresPhoneVerification || false);
         setStep('verify-email');
         setCountdown(60);
@@ -209,33 +233,17 @@ export default function RegisterPage() {
     if (!registrationPhone) return;
 
     try {
-      // Formatear número a E.164
-      let phoneNumber = registrationPhone.replace(/\D/g, ''); // Solo dígitos
+      // El número ya viene formateado con código de país desde el formulario
+      const phoneNumber = registrationPhone;
       
-      // Si empieza con código de país (52 para México), agregamos el +
-      if (phoneNumber.startsWith('52') && phoneNumber.length === 12) {
-        phoneNumber = '+' + phoneNumber;
-      } else if (phoneNumber.startsWith('1') && phoneNumber.length === 11) {
-        // USA/Canada
-        phoneNumber = '+' + phoneNumber;
-      } else if (phoneNumber.length === 10) {
-        // Asumir México si son 10 dígitos
-        phoneNumber = '+52' + phoneNumber;
-      } else if (!registrationPhone.startsWith('+')) {
-        // Si no tiene + y no es un formato reconocido, agregar +52
-        phoneNumber = '+52' + phoneNumber;
-      } else {
-        // Ya tiene + al inicio
-        phoneNumber = '+' + phoneNumber;
-      }
-      
-      // Validar longitud (E.164 max 15 dígitos incluyendo código de país)
-      if (phoneNumber.length > 16 || phoneNumber.length < 10) {
-        toast.error('Número de teléfono inválido. Ingresa un número de 10 dígitos.');
+      // Validar formato E.164 (debe empezar con + y tener entre 10-15 dígitos)
+      const digitsOnly = phoneNumber.replace(/\D/g, '');
+      if (!phoneNumber.startsWith('+') || digitsOnly.length < 10 || digitsOnly.length > 15) {
+        toast.error('Número de teléfono inválido. Verifica el formato.');
         return;
       }
       
-      console.log('Formatted phone number:', phoneNumber);
+      console.log('Phone number for SMS:', phoneNumber);
 
       if (!window.recaptchaVerifier) {
         setupRecaptcha();
@@ -448,15 +456,39 @@ export default function RegisterPage() {
             <label htmlFor="phone" className="label">
               Teléfono <span className="text-gray-400">(para verificación SMS)</span>
             </label>
-            <input
-              id="phone"
-              type="tel"
-              {...register('phone')}
-              className="input"
-              placeholder="+52 55 1234 5678"
-            />
+            <div className="flex">
+              <select
+                value={selectedCountryCode}
+                onChange={(e) => setSelectedCountryCode(e.target.value)}
+                className="input rounded-r-none border-r-0 w-28 flex-shrink-0"
+              >
+                {COUNTRY_CODES.map((country) => (
+                  <option key={country.code} value={country.code}>
+                    {country.flag} {country.code}
+                  </option>
+                ))}
+              </select>
+              <input
+                id="phone"
+                type="tel"
+                {...register('phone', {
+                  pattern: {
+                    value: /^\d{10}$/,
+                    message: 'Ingresa exactamente 10 dígitos'
+                  }
+                })}
+                className="input rounded-l-none flex-1"
+                placeholder="5512345678"
+                maxLength={10}
+              />
+            </div>
+            {errors.phone && (
+              <p className="mt-1 text-sm text-red-600 dark:text-red-400">
+                {errors.phone.message}
+              </p>
+            )}
             <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              Incluye el código de país. Ej: +52 para México
+              Solo 10 dígitos, sin espacios ni guiones
             </p>
           </div>
 
