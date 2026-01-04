@@ -115,6 +115,42 @@ export default function AppointmentModal({
     setWarningAccepted(false);
   }, [slotsData]);
 
+  // Cargar datos cuando se abre el modal para editar
+  useEffect(() => {
+    if (isOpen && editAppointment) {
+      // Cargar datos de la cita a editar
+      setSelectedClient(editAppointment.client || null);
+      setSelectedService(editAppointment.service || null);
+      setSelectedEmployee(editAppointment.employee || null);
+      setSelectedDate(
+        editAppointment.date 
+          ? format(new Date(editAppointment.date), 'yyyy-MM-dd')
+          : format(new Date(), 'yyyy-MM-dd')
+      );
+      setSelectedSlot(editAppointment.startTime || null);
+      // Cargar extras seleccionados
+      if (editAppointment.extras && editAppointment.extras.length > 0) {
+        setSelectedExtras(
+          editAppointment.extras.map((e: any) => ({
+            id: e.extraId || e.extra?.id || e.id,
+            quantity: e.quantity || 1,
+          }))
+        );
+      } else {
+        setSelectedExtras([]);
+      }
+    } else if (isOpen && !editAppointment) {
+      // Reset para nueva cita
+      setSelectedClient(null);
+      setSelectedService(null);
+      setSelectedEmployee(null);
+      setSelectedDate(initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
+      setSelectedSlot(null);
+      setSelectedExtras([]);
+      setClientSearch('');
+    }
+  }, [isOpen, editAppointment, initialDate]);
+
   // Create appointment mutation
   const createMutation = useMutation({
     mutationFn: (data: CreateAppointmentData) => appointmentService.create(data),

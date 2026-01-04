@@ -101,21 +101,21 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-30 lg:flex lg:w-72 lg:flex-col">
         <div className="flex flex-col flex-1 bg-dark-950 border-r border-dark-800">
-          {/* Logo */}
-          <div className="flex items-center h-16 px-6 border-b border-dark-800">
-            <div className="flex items-center gap-3">
-              {tenantLogo ? (
-                <img src={tenantLogo} alt={tenantName} className="w-10 h-10 rounded-xl object-contain" />
-              ) : (
-                <div className="w-10 h-10 rounded-xl bg-primary-500 flex items-center justify-center">
-                  <SparklesIcon className="w-6 h-6 text-dark-950" />
-                </div>
-              )}
-              <div>
-                <span className="text-xl font-bold text-white">{tenantName}</span>
-                <p className="text-[10px] text-gray-600 -mt-0.5">by Serrano Marketing</p>
+          {/* Logo - Branding prominente (soporta logos horizontales y cuadrados) */}
+          <div className="flex flex-col items-center py-6 px-4 border-b border-dark-800">
+            {tenantLogo ? (
+              <img 
+                src={tenantLogo} 
+                alt={tenantName} 
+                className="max-w-[200px] max-h-20 w-auto h-auto object-contain mb-3 rounded-xl" 
+              />
+            ) : (
+              <div className="w-16 h-16 rounded-2xl bg-primary-500 flex items-center justify-center mb-3">
+                <SparklesIcon className="w-10 h-10 text-dark-950" />
               </div>
-            </div>
+            )}
+            <span className="text-xl font-bold text-white text-center">{tenantName}</span>
+            <p className="text-[10px] text-gray-500 mt-0.5">CitasPro by Serrano Marketing</p>
           </div>
 
           {/* Navigation */}

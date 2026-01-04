@@ -1,4 +1,4 @@
-import { useState, Fragment } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, Transition } from '@headlessui/react';
 import { useForm } from 'react-hook-form';
@@ -9,8 +9,6 @@ import {
   TrashIcon,
   CurrencyDollarIcon,
   XMarkIcon,
-  EyeIcon,
-  EyeSlashIcon,
   ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
 import { extrasService } from '@/services/extras';
@@ -134,28 +132,22 @@ export default function ExtrasPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => toggleActiveMutation.mutate(extra)}
-                    className="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    title={extra.isActive ? 'Desactivar' : 'Activar'}
-                  >
-                    {extra.isActive ? (
-                      <EyeIcon className="w-4 h-4" />
-                    ) : (
-                      <EyeSlashIcon className="w-4 h-4" />
-                    )}
-                  </button>
+                <div className="flex items-center gap-2">
+                  <ToggleSwitch
+                    checked={extra.isActive}
+                    onChange={() => toggleActiveMutation.mutate(extra)}
+                    size="sm"
+                  />
                   <button
                     onClick={() => handleOpenModal(extra)}
-                    className="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    className="p-1.5 rounded-lg text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
                     title="Editar"
                   >
                     <PencilIcon className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(extra)}
-                    className="p-1.5 rounded-lg text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="p-1.5 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     title="Eliminar"
                   >
                     <TrashIcon className="w-4 h-4" />
@@ -202,12 +194,7 @@ function ExtraModal({ isOpen, onClose, extra }: ExtraModalProps) {
   const isEditing = !!extra;
 
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<CreateExtraData>({
-    defaultValues: extra ? {
-      name: extra.name,
-      description: extra.description || '',
-      price: Number(extra.price),
-      isActive: extra.isActive,
-    } : {
+    defaultValues: {
       name: '',
       description: '',
       price: 0,
@@ -215,24 +202,26 @@ function ExtraModal({ isOpen, onClose, extra }: ExtraModalProps) {
     },
   });
 
-  // Reset form when extra changes
-  useState(() => {
-    if (extra) {
-      reset({
-        name: extra.name,
-        description: extra.description || '',
-        price: Number(extra.price),
-        isActive: extra.isActive,
-      });
-    } else {
-      reset({
-        name: '',
-        description: '',
-        price: 0,
-        isActive: true,
-      });
+  // Reset form when extra changes or modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (extra) {
+        reset({
+          name: extra.name,
+          description: extra.description || '',
+          price: Number(extra.price),
+          isActive: extra.isActive,
+        });
+      } else {
+        reset({
+          name: '',
+          description: '',
+          price: 0,
+          isActive: true,
+        });
+      }
     }
-  });
+  }, [isOpen, extra, reset]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateExtraData) => extrasService.create(data),

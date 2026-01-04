@@ -55,6 +55,9 @@ export const getSettings = asyncHandler(async (req: Request, res: Response) => {
       tiktok: tenant.tiktok,
       linkedin: tenant.linkedin,
       whatsapp: tenant.whatsapp,
+      // AI Configuration
+      aiEnabled: tenant.aiEnabled,
+      aiActiveForTenant: tenant.aiActiveForTenant,
       plan: tenant.plan,
       subscriptionStatus: tenant.subscriptionStatus,
       trialEndsAt: tenant.trialEndsAt,
@@ -65,12 +68,16 @@ export const getSettings = asyncHandler(async (req: Request, res: Response) => {
 
 // Actualizar configuración del tenant
 export const updateSettings = asyncHandler(async (req: Request, res: Response) => {
+  console.log('📝 [SETTINGS] Datos recibidos:', JSON.stringify(req.body, null, 2));
   const data = updateTenantSettingsSchema.parse(req.body);
+  console.log('📝 [SETTINGS] Datos parseados:', JSON.stringify(data, null, 2));
   
   const tenant = await prisma.tenant.update({
     where: { id: req.tenant!.id },
     data,
   });
+  
+  console.log('📝 [SETTINGS] Tenant actualizado - primaryColor:', tenant.primaryColor, 'secondaryColor:', tenant.secondaryColor);
   
   res.json({
     success: true,

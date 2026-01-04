@@ -207,8 +207,16 @@
            bg-dark-900/80;
   }
 
+  .table th.text-center {
+    text-align: center;
+  }
+
   .table td {
     @apply px-6 py-4 whitespace-nowrap text-sm text-gray-300;
+  }
+
+  .table td.text-center {
+    text-align: center;
   }
 
   .table tbody tr {

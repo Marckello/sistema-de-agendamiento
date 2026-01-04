@@ -263,6 +263,8 @@ export const updateTenantSettingsSchema = z.object({
   tiktok: z.string().url().optional().or(z.literal('')).or(z.null()),
   linkedin: z.string().url().optional().or(z.literal('')).or(z.null()),
   whatsapp: z.string().optional().or(z.literal('')).or(z.null()),
+  // AI Configuration (tenant can toggle)
+  aiActiveForTenant: z.boolean().optional(),
 });
 
 // Notification template schema

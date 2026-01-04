@@ -103,6 +103,10 @@ export const adminService = {
     isActive?: boolean;
     planId?: string;
     subscriptionStatus?: string;
+    aiEnabled?: boolean;
+    aiModel?: string;
+    aiMaxTokens?: number;
+    aiTemperature?: number;
   }): Promise<Tenant> {
     const response = await api.patch(`/admin/tenants/${id}`, data);
     return response.data;

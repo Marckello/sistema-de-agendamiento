@@ -44,6 +44,12 @@ export const appointmentService = {
     return response.data;
   },
 
+  // Delete appointment
+  delete: async (id: string): Promise<ApiResponse<void>> => {
+    const response = await api.delete(`/appointments/${id}`);
+    return response.data;
+  },
+
   // Cancel appointment
   cancel: async (id: string, reason?: string): Promise<ApiResponse<Appointment>> => {
     const response = await api.post(`/appointments/${id}/cancel`, { reason });

@@ -472,3 +472,27 @@ export const getCalendarAppointments = asyncHandler(async (req: Request, res: Re
     data: events,
   });
 });
+
+// Eliminar cita
+export const deleteAppointment = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+  
+  const appointment = await prisma.appointment.findFirst({
+    where: { id, tenantId: req.tenant!.id },
+  });
+  
+  if (!appointment) {
+    throw new NotFoundError('Cita');
+  }
+  
+  // Soft delete: marcar como inactivo
+  await prisma.appointment.update({
+    where: { id },
+    data: { isActive: false },
+  });
+  
+  res.json({
+    success: true,
+    message: 'Cita eliminada exitosamente',
+  });
+});

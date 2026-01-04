@@ -29,6 +29,7 @@ import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { dashboardService } from '@/services/dashboard';
 import { appointmentService } from '@/services/appointments';
+import { settingsService } from '@/services/settings';
 
 const COLORS = ['#10b981', '#14b8a6', '#06b6d4', '#a855f7', '#ec4899', '#3b82f6'];
 
@@ -77,12 +78,19 @@ export default function DashboardPage() {
     queryFn: () => appointmentService.getUpcoming(5),
   });
 
+  // Fetch tenant settings for currency
+  const { data: settingsData } = useQuery({
+    queryKey: ['settings'],
+    queryFn: () => settingsService.getSettings(),
+  });
+
   const stats = statsData?.data;
   const appointmentsByDay = appointmentsByDayData?.data || [];
   const appointmentsByStatus = appointmentsByStatusData?.data || [];
   const topServices = topServicesData?.data || [];
   // upcomingData.data is { appointments: [], pagination: {} }
   const upcomingAppointments = upcomingData?.data?.appointments || [];
+  const tenantCurrency = settingsData?.data?.currency || 'USD';
 
   // Format chart data
   const chartData = appointmentsByDay.map((item: any) => ({
@@ -97,9 +105,9 @@ export default function DashboardPage() {
   }));
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('es-ES', {
+    return new Intl.NumberFormat('es-MX', {
       style: 'currency',
-      currency: 'USD',
+      currency: tenantCurrency,
     }).format(value);
   };
 
@@ -142,7 +150,7 @@ export default function DashboardPage() {
           loading={statsLoading}
         />
         <StatCard
-          title="Ingresos"
+          title="Ingresos Totales"
           value={formatCurrency(stats?.totalRevenue || 0)}
           icon={CurrencyDollarIcon}
           color="yellow"
@@ -155,6 +163,58 @@ export default function DashboardPage() {
           color="purple"
           loading={statsLoading}
         />
+      </div>
+
+      {/* Revenue breakdown */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-400">Ingresos por Servicios</p>
+              <p className="text-2xl font-bold text-white mt-1">
+                {formatCurrency(stats?.serviceRevenue || 0)}
+              </p>
+            </div>
+            <div className="p-3 bg-blue-500/20 rounded-xl">
+              <CalendarDaysIcon className="w-6 h-6 text-blue-400" />
+            </div>
+          </div>
+          <div className="mt-3 text-xs text-gray-500">
+            {stats?.totalRevenue ? Math.round((stats.serviceRevenue / stats.totalRevenue) * 100) : 0}% del total
+          </div>
+        </div>
+        <div className="card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-400">Ingresos por Extras</p>
+              <p className="text-2xl font-bold text-white mt-1">
+                {formatCurrency(stats?.extrasRevenue || 0)}
+              </p>
+            </div>
+            <div className="p-3 bg-purple-500/20 rounded-xl">
+              <SparklesIcon className="w-6 h-6 text-purple-400" />
+            </div>
+          </div>
+          <div className="mt-3 text-xs text-gray-500">
+            {stats?.totalRevenue ? Math.round((stats.extrasRevenue / stats.totalRevenue) * 100) : 0}% del total
+          </div>
+        </div>
+        <div className="card p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-400">Ticket Promedio</p>
+              <p className="text-2xl font-bold text-white mt-1">
+                {formatCurrency(stats?.completedAppointments ? (stats.totalRevenue / stats.completedAppointments) : 0)}
+              </p>
+            </div>
+            <div className="p-3 bg-emerald-500/20 rounded-xl">
+              <ArrowTrendingUpIcon className="w-6 h-6 text-emerald-400" />
+            </div>
+          </div>
+          <div className="mt-3 text-xs text-gray-500">
+            Por cita completada
+          </div>
+        </div>
       </div>
 
       {/* Charts row */}

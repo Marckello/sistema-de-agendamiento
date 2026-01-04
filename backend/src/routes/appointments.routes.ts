@@ -17,6 +17,7 @@ router.get('/:id', appointmentsController.getAppointment);
 // Rutas que requieren permisos de modificación (Admin o Super Admin)
 router.post('/', requireModifyPermission, appointmentsController.create);
 router.put('/:id', appointmentsController.update); // Empleados pueden actualizar notas
+router.delete('/:id', requireModifyPermission, appointmentsController.deleteAppointment);
 router.post('/:id/cancel', requireModifyPermission, appointmentsController.cancel);
 router.post('/:id/resend-reminder', appointmentsController.resendReminder); // Todos pueden reenviar
 

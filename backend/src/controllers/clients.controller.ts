@@ -36,6 +36,15 @@ export const getClients = asyncHandler(async (req: Request, res: Response) => {
   const [clients, total] = await Promise.all([
     prisma.client.findMany({
       where,
+      include: {
+        _count: {
+          select: {
+            appointments: {
+              where: { isActive: true }
+            }
+          }
+        }
+      },
       orderBy: sortBy 
         ? { [sortBy]: sortOrder || 'asc' } 
         : [{ lastName: 'asc' }, { firstName: 'asc' }],
@@ -75,6 +84,11 @@ export const getClient = asyncHandler(async (req: Request, res: Response) => {
         include: {
           service: { select: { name: true, price: true } },
           employee: { select: { firstName: true, lastName: true, title: true } },
+          extras: {
+            include: {
+              extra: { select: { name: true, price: true } },
+            },
+          },
         },
       },
     },
@@ -82,6 +96,36 @@ export const getClient = asyncHandler(async (req: Request, res: Response) => {
   
   if (!client) {
     throw new NotFoundError('Cliente');
+  }
+  
+  // Calcular totalSpent si está en 0 (migración de datos antiguos)
+  if (Number(client.totalSpent) === 0) {
+    const completedAppointments = await prisma.appointment.findMany({
+      where: {
+        clientId: id,
+        status: 'COMPLETED',
+        isActive: true,
+      },
+      include: {
+        extras: true,
+      },
+    });
+    
+    if (completedAppointments.length > 0) {
+      const calculatedTotal = completedAppointments.reduce((sum, apt) => {
+        const extrasTotal = apt.extras.reduce((eSum, e) => eSum + Number(e.total), 0);
+        return sum + Number(apt.price) + extrasTotal;
+      }, 0);
+      
+      // Actualizar el totalSpent
+      await prisma.client.update({
+        where: { id },
+        data: { totalSpent: calculatedTotal },
+      });
+      
+      // Actualizar el objeto cliente para la respuesta
+      (client as any).totalSpent = calculatedTotal;
+    }
   }
   
   res.json({

@@ -15,7 +15,10 @@ import {
   ChevronLeft,
   ChevronRight,
   RefreshCw,
+  Sparkles,
+  Bot,
 } from 'lucide-react';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
 export default function TenantsManagement() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
@@ -33,6 +36,14 @@ export default function TenantsManagement() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  
+  // AI Configuration
+  const [aiConfig, setAiConfig] = useState({
+    aiEnabled: false,
+    aiModel: 'gpt-4o-mini',
+    aiMaxTokens: 2000,
+    aiTemperature: 0.7,
+  });
 
   useEffect(() => {
     loadPlans();
@@ -101,6 +112,35 @@ export default function TenantsManagement() {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleUpdateAI = async (tenantId: string) => {
+    try {
+      setActionLoading(true);
+      await adminService.updateTenant(tenantId, {
+        aiEnabled: aiConfig.aiEnabled,
+        aiModel: aiConfig.aiModel,
+        aiMaxTokens: aiConfig.aiMaxTokens,
+        aiTemperature: aiConfig.aiTemperature,
+      });
+      loadTenants();
+    } catch (err) {
+      console.error('Error updating AI config:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openEditModal = async (tenant: Tenant) => {
+    setSelectedTenant(tenant);
+    // Load AI config from tenant
+    setAiConfig({
+      aiEnabled: (tenant as any).aiEnabled ?? false,
+      aiModel: (tenant as any).aiModel || 'gpt-4o-mini',
+      aiMaxTokens: (tenant as any).aiMaxTokens || 2000,
+      aiTemperature: (tenant as any).aiTemperature || 0.7,
+    });
+    setShowEditModal(true);
   };
 
   const viewTenantDetail = async (tenant: Tenant) => {
@@ -205,7 +245,7 @@ export default function TenantsManagement() {
                 <th className="text-left py-4 px-6 text-gray-400 font-medium">Usuarios</th>
                 <th className="text-left py-4 px-6 text-gray-400 font-medium">Citas</th>
                 <th className="text-left py-4 px-6 text-gray-400 font-medium">Creada</th>
-                <th className="text-right py-4 px-6 text-gray-400 font-medium">Acciones</th>
+                <th className="text-center py-4 px-6 text-gray-400 font-medium">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -271,8 +311,8 @@ export default function TenantsManagement() {
                     <td className="py-4 px-6 text-gray-400 text-sm">
                       {formatDate(tenant.createdAt)}
                     </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="py-4 px-6 text-center">
+                      <div className="flex items-center justify-center gap-2">
                         <button
                           onClick={() => viewTenantDetail(tenant)}
                           className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
@@ -281,10 +321,7 @@ export default function TenantsManagement() {
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => {
-                            setSelectedTenant(tenant);
-                            setShowEditModal(true);
-                          }}
+                          onClick={() => openEditModal(tenant)}
                           className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
                           title="Editar"
                         >
@@ -450,8 +487,8 @@ export default function TenantsManagement() {
 
       {/* Edit Modal */}
       {showEditModal && selectedTenant && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-900 rounded-xl border border-gray-800 max-w-md w-full">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div key={selectedTenant.id} className="bg-gray-900 rounded-xl border border-gray-800 max-w-lg w-full my-8">
             <div className="p-6 border-b border-gray-800 flex items-center justify-between">
               <h2 className="text-xl font-semibold text-white">Editar Empresa</h2>
               <button
@@ -461,7 +498,7 @@ export default function TenantsManagement() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-6">
               <div>
                 <label className="block text-gray-400 text-sm mb-2">Nombre</label>
                 <p className="text-white font-medium">{selectedTenant.name}</p>
@@ -470,7 +507,7 @@ export default function TenantsManagement() {
               <div>
                 <label className="block text-gray-400 text-sm mb-2">Plan</label>
                 <select
-                  defaultValue={selectedTenant.planId || ''}
+                  value={selectedTenant.planId || ''}
                   onChange={(e) => handleUpdatePlan(selectedTenant.id, e.target.value)}
                   disabled={actionLoading}
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
@@ -494,6 +531,91 @@ export default function TenantsManagement() {
                   }`}
                 >
                   {actionLoading ? 'Procesando...' : selectedTenant.isActive ? 'Desactivar Empresa' : 'Activar Empresa'}
+                </button>
+              </div>
+
+              {/* AI Configuration Section */}
+              <div className="border-t border-gray-800 pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Bot className="w-5 h-5 text-purple-400" />
+                  <h3 className="text-lg font-semibold text-white">Configuración de IA</h3>
+                </div>
+
+                {/* Enable AI */}
+                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/20 mb-4">
+                  <div>
+                    <p className="font-medium text-white">Activar Asistente IA</p>
+                    <p className="text-sm text-gray-400 mt-1">
+                      Permite acceso al chat de IA para este tenant
+                    </p>
+                  </div>
+                  <ToggleSwitch
+                    checked={aiConfig.aiEnabled}
+                    onChange={(val) => setAiConfig({ ...aiConfig, aiEnabled: val })}
+                  />
+                </div>
+
+                {aiConfig.aiEnabled && (
+                  <div className="space-y-4">
+                    {/* Model */}
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-2">Modelo de IA</label>
+                      <select
+                        value={aiConfig.aiModel}
+                        onChange={(e) => setAiConfig({ ...aiConfig, aiModel: e.target.value })}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+                      >
+                        <option value="gpt-4o-mini">GPT-4o Mini (Económico)</option>
+                        <option value="gpt-4o">GPT-4o (Potente)</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+                      </select>
+                    </div>
+
+                    {/* Temperature */}
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-2">
+                        Creatividad: {aiConfig.aiTemperature}
+                      </label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={aiConfig.aiTemperature}
+                        onChange={(e) => setAiConfig({ ...aiConfig, aiTemperature: parseFloat(e.target.value) })}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <div className="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Preciso</span>
+                        <span>Creativo</span>
+                      </div>
+                    </div>
+
+                    {/* Max Tokens */}
+                    <div>
+                      <label className="block text-gray-400 text-sm mb-2">Longitud de respuesta</label>
+                      <select
+                        value={aiConfig.aiMaxTokens}
+                        onChange={(e) => setAiConfig({ ...aiConfig, aiMaxTokens: parseInt(e.target.value) })}
+                        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-purple-500"
+                      >
+                        <option value={1000}>Corta (1000 tokens)</option>
+                        <option value={2000}>Media (2000 tokens)</option>
+                        <option value={4000}>Larga (4000 tokens)</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Save AI Config Button */}
+                <button
+                  onClick={() => handleUpdateAI(selectedTenant.id)}
+                  disabled={actionLoading}
+                  className="w-full mt-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  {actionLoading ? 'Guardando...' : 'Guardar Configuración de IA'}
                 </button>
               </div>
             </div>

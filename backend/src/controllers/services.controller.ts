@@ -116,12 +116,16 @@ export const deleteCategory = asyncHandler(async (req: Request, res: Response) =
 
 // Obtener servicios
 export const getServices = asyncHandler(async (req: Request, res: Response) => {
-  const { categoryId, isPublic } = req.query;
+  const { categoryId, isPublic, isActive } = req.query;
   
   const where: any = {
     tenantId: req.tenant!.id,
-    isActive: true,
   };
+  
+  // Solo filtrar por isActive si se especifica explícitamente
+  if (isActive !== undefined) {
+    where.isActive = isActive === 'true';
+  }
   
   if (categoryId) {
     where.categoryId = categoryId;

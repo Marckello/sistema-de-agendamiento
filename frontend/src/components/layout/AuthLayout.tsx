@@ -20,7 +20,7 @@ export default function AuthLayout() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">CitasPro</h1>
-              <p className="text-xs text-gray-600">by Serrano Marketing</p>
+              <p className="text-xs text-gray-500">CitasPro by Serrano Marketing</p>
             </div>
           </div>
           

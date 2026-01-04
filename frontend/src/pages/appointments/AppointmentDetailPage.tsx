@@ -377,17 +377,56 @@ export default function AppointmentDetailPage() {
               Pago
             </h2>
             <div className="space-y-3">
+              {/* Desglose del servicio */}
               <div className="flex justify-between">
-                <span className="text-gray-400">Precio</span>
+                <span className="text-gray-400">Servicio</span>
                 <span className="font-medium text-white">
-                  ${appointment.price || appointment.service?.price || 0}
+                  ${Number(appointment.service?.price || 0).toFixed(2)}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Estado</span>
-                <span className={`font-medium ${appointment.isPaid ? 'text-emerald-400' : 'text-yellow-400'}`}>
-                  {appointment.isPaid ? 'Pagado' : 'Pendiente'}
-                </span>
+              
+              {/* Extras */}
+              {appointment.extras && appointment.extras.length > 0 && (
+                <>
+                  <div className="border-t border-dark-700 my-2"></div>
+                  <p className="text-sm text-gray-500 font-medium">Extras</p>
+                  {appointment.extras.map((ae: any) => (
+                    <div key={ae.id || ae.extraId} className="flex justify-between text-sm">
+                      <span className="text-gray-400">
+                        {ae.extra?.name || ae.name}
+                        {ae.quantity > 1 && ` x${ae.quantity}`}
+                      </span>
+                      <span className="text-white">
+                        ${Number(ae.total || (ae.unitPrice * ae.quantity) || ae.extra?.price || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </>
+              )}
+              
+              {/* Total */}
+              <div className="border-t border-dark-700 pt-3 mt-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-300 font-medium">Total</span>
+                  <span className="font-bold text-white text-lg">
+                    ${(() => {
+                      const servicePrice = Number(appointment.service?.price || 0);
+                      const extrasTotal = appointment.extras?.reduce((sum: number, ae: any) => {
+                        return sum + Number(ae.total || (ae.unitPrice * ae.quantity) || ae.extra?.price || 0);
+                      }, 0) || 0;
+                      return (servicePrice + extrasTotal).toFixed(2);
+                    })()}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="border-t border-dark-700 pt-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Estado</span>
+                  <span className={`font-medium ${appointment.isPaid ? 'text-emerald-400' : 'text-yellow-400'}`}>
+                    {appointment.isPaid ? 'Pagado' : 'Pendiente'}
+                  </span>
+                </div>
               </div>
               {appointment.paymentMethod && (
                 <div className="flex justify-between">

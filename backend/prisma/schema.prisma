@@ -143,6 +143,14 @@ model Tenant {
   smtpFromName String?  // Display name for emails
   smtpEnabled  Boolean  @default(false)
   
+  // AI Configuration (configurado desde Panel Admin)
+  aiEnabled     Boolean @default(false)
+  aiModel       String  @default("gpt-4o-mini")
+  aiMaxTokens   Int     @default(2000)
+  aiTemperature Float   @default(0.7)
+  aiSystemPrompt String? @db.Text
+  aiActiveForTenant Boolean @default(true) // Tenant puede desactivar el AI localmente
+  
   // Plan y suscripción
   planId             String
   plan               Plan     @relation(fields: [planId], references: [id])

@@ -623,6 +623,23 @@ export async function updateAppointment(appointmentId: string, data: UpdateAppoi
     },
   });
   
+  // Si la cita se marca como completada, actualizar totalSpent del cliente
+  if (data.status === 'COMPLETED' && previousStatus !== 'COMPLETED') {
+    // Calcular el total de la cita (precio del servicio + extras)
+    const extrasTotal = appointment.extras.reduce((sum, ae) => sum + Number(ae.total), 0);
+    const appointmentTotal = Number(appointment.price) + extrasTotal;
+    
+    // Incrementar totalSpent del cliente
+    await prisma.client.update({
+      where: { id: appointment.clientId },
+      data: {
+        totalSpent: {
+          increment: appointmentTotal,
+        },
+      },
+    });
+  }
+  
   // Enviar notificaciones según el cambio de estado
   if (data.status && data.status !== previousStatus) {
     let notificationType: 'APPOINTMENT_CONFIRMED' | 'APPOINTMENT_CANCELED' | 'APPOINTMENT_RESCHEDULED' | 'APPOINTMENT_COMPLETED' | null = null;

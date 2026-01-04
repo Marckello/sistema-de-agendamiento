@@ -12,13 +12,14 @@ import {
   GlobeAltIcon,
   EyeIcon,
   EyeSlashIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import { settingsService } from '@/services/settings';
 import { TenantSettings } from '@/types';
 import WhatsAppSettings from '@/components/settings/WhatsAppSettings';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 
-type SettingsTab = 'general' | 'branding' | 'social' | 'booking' | 'notifications' | 'schedule' | 'whatsapp';
+type SettingsTab = 'general' | 'branding' | 'social' | 'booking' | 'notifications' | 'schedule' | 'whatsapp' | 'ai';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -38,6 +39,7 @@ export default function SettingsPage() {
     { id: 'notifications' as const, label: 'Notificaciones', icon: BellIcon },
     { id: 'schedule' as const, label: 'Horarios', icon: ClockIcon },
     { id: 'whatsapp' as const, label: 'WhatsApp', icon: ChatBubbleOvalLeftEllipsisIcon },
+    { id: 'ai' as const, label: 'Asistente IA', icon: SparklesIcon },
   ];
 
   return (
@@ -88,6 +90,7 @@ export default function SettingsPage() {
               {activeTab === 'notifications' && <NotificationSettings settings={settings} />}
               {activeTab === 'schedule' && <ScheduleSettings />}
               {activeTab === 'whatsapp' && <WhatsAppSettings />}
+              {activeTab === 'ai' && <AISettings settings={settings} />}
             </>
           )}
         </div>
@@ -229,15 +232,20 @@ function BrandingSettings({ settings }: { settings?: any }) {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { register, handleSubmit, reset } = useForm({
+  const { register, handleSubmit, reset, watch, setValue } = useForm({
     defaultValues: {
       primaryColor: '#3B82F6',
       secondaryColor: '#10B981',
     },
   });
 
+  // Watch para sincronizar los inputs
+  const primaryColor = watch('primaryColor');
+  const secondaryColor = watch('secondaryColor');
+
   // Cargar datos cuando settings cambie
   useEffect(() => {
+    console.log('🔄 [BRANDING] Settings recibidos:', settings?.primaryColor, settings?.secondaryColor);
     if (settings) {
       reset({
         primaryColor: settings.primaryColor || '#3B82F6',
@@ -248,12 +256,17 @@ function BrandingSettings({ settings }: { settings?: any }) {
   }, [settings, reset]);
 
   const mutation = useMutation({
-    mutationFn: (data: TenantSettings['branding']) => settingsService.updateBranding(data),
+    mutationFn: (data: TenantSettings['branding']) => {
+      console.log('🎨 [BRANDING] Enviando datos:', data);
+      return settingsService.updateBranding(data);
+    },
     onSuccess: () => {
+      console.log('✅ [BRANDING] Guardado exitosamente');
       toast.success('Configuración guardada');
       queryClient.invalidateQueries({ queryKey: ['settings'] });
     },
     onError: (error: any) => {
+      console.error('❌ [BRANDING] Error:', error);
       toast.error(error.response?.data?.message || 'Error al guardar');
     },
   });
@@ -287,6 +300,11 @@ function BrandingSettings({ settings }: { settings?: any }) {
     }
   };
 
+  const onSubmit = (data: any) => {
+    console.log('🎨 [BRANDING] Form submit con datos:', data);
+    mutation.mutate(data as TenantSettings['branding']);
+  };
+
   return (
     <div className="card">
       <div className="card-header">
@@ -294,7 +312,7 @@ function BrandingSettings({ settings }: { settings?: any }) {
           Marca y Personalización
         </h2>
       </div>
-      <form onSubmit={handleSubmit((data) => mutation.mutate(data as TenantSettings['branding']))}>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className="card-body space-y-4">
           {/* Logo Upload */}
           <div>
@@ -336,15 +354,33 @@ function BrandingSettings({ settings }: { settings?: any }) {
             <div>
               <label className="label">Color primario</label>
               <div className="flex gap-2">
-                <input type="color" {...register('primaryColor')} className="h-10 w-20 rounded border cursor-pointer" />
-                <input {...register('primaryColor')} className="input flex-1" placeholder="#3B82F6" />
+                <input 
+                  type="color" 
+                  value={primaryColor} 
+                  onChange={(e) => setValue('primaryColor', e.target.value)}
+                  className="h-10 w-20 rounded border cursor-pointer" 
+                />
+                <input 
+                  {...register('primaryColor')} 
+                  className="input flex-1" 
+                  placeholder="#3B82F6" 
+                />
               </div>
             </div>
             <div>
               <label className="label">Color secundario</label>
               <div className="flex gap-2">
-                <input type="color" {...register('secondaryColor')} className="h-10 w-20 rounded border cursor-pointer" />
-                <input {...register('secondaryColor')} className="input flex-1" placeholder="#10B981" />
+                <input 
+                  type="color" 
+                  value={secondaryColor}
+                  onChange={(e) => setValue('secondaryColor', e.target.value)}
+                  className="h-10 w-20 rounded border cursor-pointer" 
+                />
+                <input 
+                  {...register('secondaryColor')} 
+                  className="input flex-1" 
+                  placeholder="#10B981" 
+                />
               </div>
             </div>
           </div>
@@ -1086,6 +1122,263 @@ function SocialSettings({ settings }: { settings?: any }) {
           </button>
         </div>
       </form>
+    </div>
+  );
+}
+
+// AI Settings Component (Tenant - Limited)
+function AISettings({ settings }: { settings?: any }) {
+  const queryClient = useQueryClient();
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
+  const [savingEmployee, setSavingEmployee] = useState<string | null>(null);
+
+  // Check if AI is enabled by platform admin
+  const aiEnabledByAdmin = settings?.aiEnabled ?? false;
+
+  // Local state for tenant toggle
+  const [aiActiveForTenant, setAiActiveForTenant] = useState(settings?.aiActiveForTenant ?? true);
+  const [savingTenant, setSavingTenant] = useState(false);
+
+  // Fetch employees
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const response = await fetch('/api/users?role=EMPLOYEE', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        const data = await response.json();
+        if (data.success && Array.isArray(data.data)) {
+          setEmployees(data.data);
+        } else if (Array.isArray(data)) {
+          // Handle case where response is the array directly
+          setEmployees(data);
+        } else {
+          setEmployees([]);
+        }
+      } catch (error) {
+        console.error('Error loading employees:', error);
+        setEmployees([]);
+      } finally {
+        setLoadingEmployees(false);
+      }
+    };
+    fetchEmployees();
+  }, []);
+
+  // Toggle AI for tenant
+  const handleToggleTenantAI = async (enabled: boolean) => {
+    try {
+      setSavingTenant(true);
+      await settingsService.updateGeneral({ aiActiveForTenant: enabled });
+      setAiActiveForTenant(enabled);
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      toast.success(enabled ? 'Asistente IA activado' : 'Asistente IA desactivado');
+    } catch (error) {
+      toast.error('Error al actualizar');
+    } finally {
+      setSavingTenant(false);
+    }
+  };
+
+  // Toggle AI for employee
+  const handleToggleEmployeeAI = async (employeeId: string, canUseAI: boolean) => {
+    try {
+      setSavingEmployee(employeeId);
+      const response = await fetch(`/api/users/${employeeId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify({ canUseAI }),
+      });
+      
+      if (response.ok) {
+        setEmployees(prev => prev.map(emp => 
+          emp.id === employeeId ? { ...emp, canUseAI } : emp
+        ));
+        toast.success(canUseAI ? 'IA activada para empleado' : 'IA desactivada para empleado');
+      }
+    } catch (error) {
+      toast.error('Error al actualizar');
+    } finally {
+      setSavingEmployee(null);
+    }
+  };
+
+  // If AI not enabled by admin
+  if (!aiEnabledByAdmin) {
+    return (
+      <div className="card">
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <SparklesIcon className="w-5 h-5 text-gray-400" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              Asistente de Inteligencia Artificial
+            </h2>
+          </div>
+        </div>
+        <div className="card-body">
+          <div className="p-6 text-center">
+            <SparklesIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Asistente IA no disponible
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              El asistente de inteligencia artificial no está habilitado para tu cuenta.
+              Contacta al administrador de la plataforma para activar esta función.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card">
+      <div className="card-header">
+        <div className="flex items-center gap-2">
+          <SparklesIcon className="w-5 h-5 text-purple-500" />
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+            Asistente de Inteligencia Artificial
+          </h2>
+        </div>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          Gestiona el acceso al asistente de IA para tu equipo
+        </p>
+      </div>
+
+      <div className="card-body space-y-6">
+        {/* Main Toggle */}
+        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl border border-purple-500/20">
+          <div>
+            <p className="font-medium text-gray-900 dark:text-white">Activar Asistente IA</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+              Habilita o deshabilita el asistente para todo tu negocio
+            </p>
+          </div>
+          <ToggleSwitch
+            checked={aiActiveForTenant}
+            onChange={handleToggleTenantAI}
+            disabled={savingTenant}
+          />
+        </div>
+
+        {aiActiveForTenant && (
+          <>
+            {/* Employee Access */}
+            <div>
+              <h3 className="text-md font-medium text-gray-900 dark:text-white mb-3">
+                Acceso por Empleado
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                Selecciona qué empleados pueden usar el asistente de IA
+              </p>
+
+              {loadingEmployees ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="animate-pulse flex items-center justify-between p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                        <div className="h-4 w-32 bg-gray-300 dark:bg-gray-700 rounded"></div>
+                      </div>
+                      <div className="w-12 h-6 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : !Array.isArray(employees) || employees.length === 0 ? (
+                <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg text-center">
+                  <p className="text-gray-500 dark:text-gray-400">No hay empleados registrados</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {employees.map((employee) => (
+                    <div 
+                      key={employee.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                          <span className="text-purple-600 dark:text-purple-400 font-medium">
+                            {employee.firstName?.[0]}{employee.lastName?.[0]}
+                          </span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            {employee.firstName} {employee.lastName}
+                          </p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            {employee.email}
+                          </p>
+                        </div>
+                      </div>
+                      <ToggleSwitch
+                        checked={employee.canUseAI ?? false}
+                        onChange={(val) => handleToggleEmployeeAI(employee.id, val)}
+                        disabled={savingEmployee === employee.id}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Info Box - What can the assistant do */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-500/10 rounded-xl border border-blue-200 dark:border-blue-500/20">
+              <h4 className="font-medium text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2">
+                <SparklesIcon className="w-5 h-5" />
+                ¿Qué puede hacer el asistente?
+              </h4>
+              <ul className="text-sm text-blue-600 dark:text-blue-300 space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">✓</span>
+                  <span><strong>Crear citas:</strong> Agenda nuevas citas mediante conversación natural</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">✓</span>
+                  <span><strong>Modificar citas:</strong> Cambia fecha, hora, servicio o empleado de citas existentes</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">✓</span>
+                  <span><strong>Cancelar citas:</strong> Cancela citas programadas con confirmación</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">✓</span>
+                  <span><strong>Consultar disponibilidad:</strong> Verifica horarios disponibles por servicio o empleado</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">✓</span>
+                  <span><strong>Buscar clientes:</strong> Encuentra información de clientes existentes</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">✓</span>
+                  <span><strong>Ver servicios y precios:</strong> Consulta el catálogo de servicios con sus precios</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5">✓</span>
+                  <span><strong>Resumen del día:</strong> Obtén un resumen rápido de las citas del día</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Tips */}
+            <div className="p-4 bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200 dark:border-amber-500/20">
+              <h4 className="font-medium text-amber-700 dark:text-amber-400 mb-2">
+                💡 Consejos de uso
+              </h4>
+              <ul className="text-sm text-amber-600 dark:text-amber-300 space-y-1">
+                <li>• Usa lenguaje natural: "Agenda una cita con María para mañana a las 3pm"</li>
+                <li>• Sé específico con fechas y horas para mejores resultados</li>
+                <li>• El asistente confirmará antes de realizar cambios importantes</li>
+              </ul>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

@@ -310,11 +310,11 @@ export async function getTenantDetail(req: Request, res: Response) {
   }
 }
 
-// Actualizar empresa (activar/desactivar, cambiar plan, etc.)
+// Actualizar empresa (activar/desactivar, cambiar plan, configuración de IA, etc.)
 export async function updateTenant(req: Request, res: Response) {
   try {
     const { id } = req.params;
-    const { isActive, planId, subscriptionStatus } = req.body;
+    const { isActive, planId, subscriptionStatus, aiEnabled, aiModel, aiMaxTokens, aiTemperature } = req.body;
 
     const updateData: Prisma.TenantUpdateInput = {};
 
@@ -328,6 +328,23 @@ export async function updateTenant(req: Request, res: Response) {
 
     if (subscriptionStatus) {
       updateData.subscriptionStatus = subscriptionStatus;
+    }
+
+    // AI Configuration
+    if (typeof aiEnabled === 'boolean') {
+      updateData.aiEnabled = aiEnabled;
+    }
+
+    if (aiModel) {
+      updateData.aiModel = aiModel;
+    }
+
+    if (typeof aiMaxTokens === 'number') {
+      updateData.aiMaxTokens = aiMaxTokens;
+    }
+
+    if (typeof aiTemperature === 'number') {
+      updateData.aiTemperature = aiTemperature;
     }
 
     const tenant = await prisma.tenant.update({

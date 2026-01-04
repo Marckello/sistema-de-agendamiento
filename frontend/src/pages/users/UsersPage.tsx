@@ -9,6 +9,7 @@ import {
   TrashIcon,
   UserGroupIcon,
   XMarkIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 import { userService, CreateUserData } from '@/services/users';
 import { User, UserRole } from '@/types';
@@ -102,7 +103,7 @@ export default function UsersPage() {
                 <th>Rol</th>
                 <th>Permisos</th>
                 <th>Estado</th>
-                <th className="text-right">Acciones</th>
+                <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -193,18 +194,27 @@ export default function UsersPage() {
                           {user.isActive ? 'Activo' : 'Inactivo'}
                         </button>
                       </td>
-                      <td className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      <td className="text-center">
+                        <div className="flex items-center justify-center gap-3">
                           <button
                             onClick={() => handleOpenModal(user)}
-                            className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                            title="Ver detalles"
+                          >
+                            <EyeIcon className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleOpenModal(user)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            title="Editar"
                           >
                             <PencilIcon className="w-5 h-5" />
                           </button>
                           {!isCurrentUser && (
                             <button
                               onClick={() => handleDelete(user)}
-                              className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                              className="p-1.5 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                              title="Eliminar"
                             >
                               <TrashIcon className="w-5 h-5" />
                             </button>
@@ -455,16 +465,6 @@ function UserModal({ isOpen, onClose, user, onSuccess }: UserModalProps) {
                       <ToggleSwitch
                         checked={watch('canDelete') || false}
                         onChange={(val) => setValue('canDelete', val)}
-                        size="sm"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                      <span className="text-sm text-gray-700 dark:text-gray-300">
-                        ✨ Acceso al asistente de IA
-                      </span>
-                      <ToggleSwitch
-                        checked={watch('canUseAI') || false}
-                        onChange={(val) => setValue('canUseAI', val)}
                         size="sm"
                       />
                     </div>

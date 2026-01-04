@@ -171,11 +171,15 @@ export const getDetailedStats = asyncHandler(async (req: Request, res: Response)
     ? new Date(endDate as string) 
     : new Date();
   
+  // Añadir día completo al end date
+  end.setHours(23, 59, 59, 999);
+  
   // Citas en el rango
   const appointments = await prisma.appointment.findMany({
     where: {
       tenantId,
       date: { gte: start, lte: end },
+      isActive: true,
     },
     select: {
       id: true,
@@ -319,9 +323,48 @@ export const getDetailedStats = asyncHandler(async (req: Request, res: Response)
   const canceled = appointments.filter(a => a.status === 'CANCELED').length;
   const noShow = appointments.filter(a => a.status === 'NO_SHOW').length;
   
+  // Ingresos por servicios (precio de la cita)
+  const serviceRevenue = appointments
+    .filter(a => a.status === 'COMPLETED')
+    .reduce((sum, a) => sum + Number(a.price), 0);
+  
+  // Ingresos por extras - obtener las citas completadas con sus extras
+  const completedAppointmentIds = appointments
+    .filter(a => a.status === 'COMPLETED')
+    .map(a => a.id);
+  
+  const extrasRevenue = completedAppointmentIds.length > 0 
+    ? await prisma.appointmentExtra.aggregate({
+        where: {
+          appointmentId: { in: completedAppointmentIds },
+        },
+        _sum: { total: true },
+      }).then(result => Number(result._sum.total || 0))
+    : 0;
+  
+  const totalRevenue = serviceRevenue + extrasRevenue;
+  
+  // Nuevos clientes en el periodo
+  const newClients = await prisma.client.count({
+    where: {
+      tenantId,
+      createdAt: { gte: start, lte: end },
+    },
+  });
+  
   res.json({
     success: true,
     data: {
+      // Campos esperados por el frontend
+      totalAppointments: total,
+      completedAppointments: completed,
+      cancelledAppointments: canceled,
+      noShowAppointments: noShow,
+      totalRevenue,
+      serviceRevenue,
+      extrasRevenue,
+      newClients,
+      // Datos adicionales para compatibilidad
       period: {
         start: start.toISOString().split('T')[0],
         end: end.toISOString().split('T')[0],
@@ -334,9 +377,7 @@ export const getDetailedStats = asyncHandler(async (req: Request, res: Response)
         completionRate: total > 0 ? Math.round((completed / total) * 1000) / 10 : 0,
         cancellationRate: total > 0 ? Math.round((canceled / total) * 1000) / 10 : 0,
         noShowRate: total > 0 ? Math.round((noShow / total) * 1000) / 10 : 0,
-        totalRevenue: appointments
-          .filter(a => a.status === 'COMPLETED')
-          .reduce((sum, a) => sum + Number(a.price), 0),
+        totalRevenue,
       },
       byDate: Object.entries(byDate)
         .map(([date, data]) => ({ date, ...data }))

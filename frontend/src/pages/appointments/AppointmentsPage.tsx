@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
   EyeIcon,
-  CheckCircleIcon,
-  XCircleIcon,
+  PencilIcon,
+  TrashIcon,
   ClockIcon,
+  ChevronUpDownIcon,
 } from '@heroicons/react/24/outline';
 import { appointmentService } from '@/services/appointments';
 import { Appointment, AppointmentStatus, AppointmentFilters } from '@/types';
@@ -25,7 +27,9 @@ const STATUS_CONFIG: Record<AppointmentStatus, { label: string; color: string; b
 };
 
 export default function AppointmentsPage() {
+  const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const [filters, setFilters] = useState<AppointmentFilters>({
     page: 1,
     limit: 20,
@@ -39,6 +43,45 @@ export default function AppointmentsPage() {
 
   const appointments = data?.data?.appointments || [];
   const pagination = data?.data?.pagination;
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => appointmentService.delete(id),
+    onSuccess: () => {
+      toast.success('Cita eliminada');
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Error al eliminar');
+    },
+  });
+
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: AppointmentStatus }) => 
+      appointmentService.update(id, { status }),
+    onSuccess: () => {
+      toast.success('Estado actualizado');
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || 'Error al actualizar');
+    },
+  });
+
+  const handleDelete = (appointment: Appointment) => {
+    if (confirm(`¿Estás seguro de eliminar la cita de ${appointment.client?.firstName} ${appointment.client?.lastName}?`)) {
+      deleteMutation.mutate(appointment.id);
+    }
+  };
+
+  const handleEdit = (appointment: Appointment) => {
+    setEditingAppointment(appointment);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingAppointment(null);
+  };
 
   const handleStatusFilter = (status: AppointmentStatus | undefined) => {
     setFilters((prev) => ({ ...prev, status, page: 1 }));
@@ -132,7 +175,7 @@ export default function AppointmentsPage() {
                 <th>Empleado</th>
                 <th>Estado</th>
                 <th>Precio</th>
-                <th className="text-right">Acciones</th>
+                <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -197,30 +240,63 @@ export default function AppointmentsPage() {
                         </p>
                       </td>
                       <td>
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.color}`}>
-                          {statusConfig.label}
-                        </span>
+                        <select
+                          value={appointment.status}
+                          onChange={(e) => updateStatusMutation.mutate({ 
+                            id: appointment.id, 
+                            status: e.target.value as AppointmentStatus 
+                          })}
+                          disabled={updateStatusMutation.isPending}
+                          className={`pl-2 pr-6 py-1 rounded-lg text-xs font-medium border-0 cursor-pointer transition-colors appearance-none
+                            ${statusConfig.bgColor} ${statusConfig.color}
+                            focus:ring-2 focus:ring-primary-500 focus:outline-none
+                            disabled:opacity-50 disabled:cursor-wait
+                            bg-[length:16px_16px] bg-[right_4px_center] bg-no-repeat
+                            bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20stroke%3D%22%236b7280%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%221.5%22%20d%3D%22m6%208%204%204%204-4%22%2F%3E%3C%2Fsvg%3E')]`}
+                        >
+                          {Object.entries(STATUS_CONFIG).map(([key, config]) => (
+                            <option key={key} value={key} className="bg-dark-900 text-gray-300">
+                              {config.label}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900 dark:text-white">
-                            ${appointment.price || appointment.service?.price || 0}
-                          </span>
-                          {appointment.isPaid ? (
-                            <CheckCircleIcon className="w-4 h-4 text-green-500" />
-                          ) : (
-                            <XCircleIcon className="w-4 h-4 text-yellow-500" />
-                          )}
-                        </div>
+                        <span className="font-medium text-gray-900 dark:text-white">
+                          ${(() => {
+                            const basePrice = appointment.price || appointment.service?.price || 0;
+                            const extrasTotal = appointment.extras?.reduce((sum: number, extra: any) => {
+                              const extraPrice = extra.priceAtTime || extra.extra?.price || 0;
+                              return sum + (extraPrice * (extra.quantity || 1));
+                            }, 0) || 0;
+                            return (Number(basePrice) + Number(extrasTotal)).toFixed(0);
+                          })()}
+                        </span>
                       </td>
-                      <td className="text-right">
-                        <Link
-                          to={`/appointments/${appointment.id}`}
-                          className="inline-flex items-center text-primary-600 hover:text-primary-500"
-                        >
-                          <EyeIcon className="w-5 h-5 mr-1" />
-                          Ver
-                        </Link>
+                      <td className="text-center">
+                        <div className="flex items-center justify-center gap-3">
+                          <Link
+                            to={`/appointments/${appointment.id}`}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                            title="Ver detalles"
+                          >
+                            <EyeIcon className="w-5 h-5" />
+                          </Link>
+                          <button
+                            onClick={() => handleEdit(appointment)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            title="Editar"
+                          >
+                            <PencilIcon className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(appointment)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            title="Eliminar"
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -257,11 +333,15 @@ export default function AppointmentsPage() {
         )}
       </div>
 
-      {/* Create Modal */}
+      {/* Create/Edit Modal */}
       <AppointmentModal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSuccess={() => refetch()}
+        onClose={handleCloseModal}
+        onSuccess={() => {
+          handleCloseModal();
+          refetch();
+        }}
+        editAppointment={editingAppointment}
       />
     </div>
   );

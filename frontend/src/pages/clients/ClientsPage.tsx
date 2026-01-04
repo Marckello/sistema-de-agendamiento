@@ -110,7 +110,7 @@ export default function ClientsPage() {
                 <th>Citas</th>
                 <th>Última visita</th>
                 <th>Estado</th>
-                <th className="text-right">Acciones</th>
+                <th className="text-center">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -216,23 +216,26 @@ export default function ClientsPage() {
                         {client.isActive ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
-                    <td className="text-right">
-                      <div className="flex items-center justify-end gap-2">
+                    <td className="text-center">
+                      <div className="flex items-center justify-center gap-3">
                         <Link
                           to={`/clients/${client.id}`}
-                          className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                          title="Ver detalles"
                         >
                           <EyeIcon className="w-5 h-5" />
                         </Link>
                         <button
                           onClick={() => handleOpenModal(client)}
-                          className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                          title="Editar"
                         >
                           <PencilIcon className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleDelete(client)}
-                          className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                          className="p-1.5 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          title="Eliminar"
                         >
                           <TrashIcon className="w-5 h-5" />
                         </button>

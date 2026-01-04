@@ -22,7 +22,7 @@ export async function generateTokenPair(user: User): Promise<TokenPair> {
       type: 'access',
     },
     config.jwt.accessSecret,
-    { expiresIn: 900 } // 15 minutes in seconds
+    { expiresIn: 86400 } // 24 hours in seconds
   );
   
   const refreshTokenValue = uuidv4();
@@ -51,7 +51,7 @@ export async function generateTokenPair(user: User): Promise<TokenPair> {
   return {
     accessToken,
     refreshToken,
-    expiresIn: 900, // 15 minutos en segundos
+    expiresIn: 86400, // 24 horas en segundos
   };
 }
 
@@ -64,7 +64,7 @@ export function generatePlatformAdminToken(admin: PlatformAdmin): TokenPair {
       isPlatformAdmin: true,
     },
     config.jwt.accessSecret,
-    { expiresIn: 900 } // 15 minutes
+    { expiresIn: 86400 } // 24 hours
   );
   
   const refreshToken = jwt.sign(
@@ -80,7 +80,7 @@ export function generatePlatformAdminToken(admin: PlatformAdmin): TokenPair {
   return {
     accessToken,
     refreshToken,
-    expiresIn: 900,
+    expiresIn: 86400,
   };
 }
 

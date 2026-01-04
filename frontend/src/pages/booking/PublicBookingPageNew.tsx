@@ -235,10 +235,10 @@ export default function PublicBookingPage() {
   };
 
   const calculateTotal = () => {
-    let total = selectedService?.price || 0;
+    let total = Number(selectedService?.price || 0);
     selectedExtras.forEach(selected => {
       const extra = extras.find(e => e.id === selected.id);
-      if (extra) total += extra.price * selected.quantity;
+      if (extra) total += Number(extra.price) * selected.quantity;
     });
     return total;
   };
@@ -369,9 +369,10 @@ export default function PublicBookingPage() {
                     step === s
                       ? 'bg-white text-gray-900'
                       : ['service', 'datetime', 'extras', 'client', 'confirm'].indexOf(step) > i
-                      ? 'bg-green-500 text-white'
+                      ? 'text-white'
                       : 'bg-white/10 text-gray-400'
                   }`}
+                  style={['service', 'datetime', 'extras', 'client', 'confirm'].indexOf(step) > i ? { backgroundColor: tenant.primaryColor } : undefined}
                 >
                   {['service', 'datetime', 'extras', 'client', 'confirm'].indexOf(step) > i ? (
                     <CheckCircleIcon className="w-5 h-5" />
@@ -482,9 +483,10 @@ export default function PublicBookingPage() {
                           onClick={() => setSelectedEmployee(emp)}
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                             selectedEmployee?.id === emp.id
-                              ? 'bg-white text-gray-900'
+                              ? 'text-white'
                               : 'bg-white/10 text-gray-400 hover:bg-white/20 hover:text-white'
                           }`}
+                          style={selectedEmployee?.id === emp.id ? { backgroundColor: tenant.primaryColor } : undefined}
                         >
                           {emp.firstName} {emp.lastName}
                         </button>
@@ -520,13 +522,14 @@ export default function PublicBookingPage() {
                           disabled={isPast}
                           className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-all ${
                             isSelected
-                              ? 'bg-white text-gray-900'
+                              ? 'text-white'
                               : isToday
                               ? 'bg-white/20 text-white'
                               : isPast
                               ? 'text-gray-600 cursor-not-allowed'
                               : 'text-gray-300 hover:bg-white/10'
                           }`}
+                          style={isSelected ? { backgroundColor: tenant.primaryColor } : undefined}
                         >
                           {format(day, 'd')}
                         </button>
@@ -562,9 +565,10 @@ export default function PublicBookingPage() {
                           }}
                           className={`py-3 px-4 rounded-lg text-sm font-medium transition-all ${
                             selectedTime === slot.time
-                              ? 'bg-white text-gray-900'
+                              ? 'text-white'
                               : 'bg-white/10 text-gray-300 hover:bg-white/20'
                           }`}
+                          style={selectedTime === slot.time ? { backgroundColor: tenant.primaryColor } : undefined}
                         >
                           {slot.time}
                         </button>
@@ -600,7 +604,8 @@ export default function PublicBookingPage() {
                   <p className="text-gray-400">No hay extras disponibles</p>
                   <button
                     onClick={() => setStep('client')}
-                    className="mt-4 px-6 py-2 bg-white text-gray-900 rounded-lg font-medium hover:bg-gray-100 transition-colors"
+                    className="mt-4 px-6 py-2 text-white rounded-lg font-medium hover:opacity-90 transition-colors"
+                    style={{ backgroundColor: tenant.primaryColor }}
                   >
                     Continuar sin extras
                   </button>
@@ -623,12 +628,13 @@ export default function PublicBookingPage() {
                             <div
                               className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${
                                 isExtraSelected(extra.id)
-                                  ? 'bg-white border-white'
+                                  ? 'border-transparent'
                                   : 'border-gray-500'
                               }`}
+                              style={isExtraSelected(extra.id) ? { backgroundColor: tenant.primaryColor } : undefined}
                             >
                               {isExtraSelected(extra.id) && (
-                                <CheckCircleIcon className="w-4 h-4 text-gray-900" />
+                                <CheckCircleIcon className="w-4 h-4 text-white" />
                               )}
                             </div>
                             <div>
@@ -651,7 +657,8 @@ export default function PublicBookingPage() {
 
                   <button
                     onClick={() => setStep('client')}
-                    className="w-full py-3 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
+                    className="w-full py-3 text-white rounded-xl font-semibold hover:opacity-90 transition-colors"
+                    style={{ backgroundColor: tenant.primaryColor }}
                   >
                     Continuar
                   </button>
@@ -725,7 +732,8 @@ export default function PublicBookingPage() {
                     }
                     setStep('confirm');
                   }}
-                  className="w-full py-3 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100 transition-colors"
+                  className="w-full py-3 text-white rounded-xl font-semibold hover:opacity-90 transition-colors"
+                  style={{ backgroundColor: tenant.primaryColor }}
                 >
                   Revisar y Confirmar
                 </button>
@@ -795,7 +803,8 @@ export default function PublicBookingPage() {
               <button
                 onClick={() => createMutation.mutate()}
                 disabled={createMutation.isPending}
-                className="w-full py-4 bg-white text-gray-900 rounded-xl font-semibold hover:bg-gray-100 transition-colors disabled:opacity-50"
+                className="w-full py-4 text-white rounded-xl font-semibold hover:opacity-90 transition-colors disabled:opacity-50"
+                style={{ backgroundColor: tenant.primaryColor }}
               >
                 {createMutation.isPending ? 'Confirmando...' : 'Confirmar Cita'}
               </button>
@@ -805,7 +814,7 @@ export default function PublicBookingPage() {
           {/* Step: Success */}
           {step === 'success' && (
             <div className="text-center py-8">
-              <div className="w-20 h-20 bg-green-500 rounded-full mx-auto mb-6 flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ backgroundColor: tenant.primaryColor }}>
                 <CheckCircleIcon className="w-12 h-12 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">¡Cita Confirmada!</h2>

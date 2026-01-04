@@ -10,8 +10,6 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
   XMarkIcon,
-  EyeIcon,
-  EyeSlashIcon,
   FolderPlusIcon,
   UserGroupIcon,
   CalendarDaysIcon,
@@ -186,30 +184,28 @@ export default function ServicesPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center justify-end gap-1 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
-                        <button
-                          onClick={() => toggleActiveMutation.mutate(service.id)}
-                          className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                          title={service.isActive ? 'Desactivar' : 'Activar'}
-                        >
-                          {service.isActive ? (
-                            <EyeIcon className="w-5 h-5" />
-                          ) : (
-                            <EyeSlashIcon className="w-5 h-5" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleOpenModal(service)}
-                          className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          <PencilIcon className="w-5 h-5" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(service)}
-                          className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          <TrashIcon className="w-5 h-5" />
-                        </button>
+                      <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <ToggleSwitch
+                          checked={service.isActive}
+                          onChange={() => toggleActiveMutation.mutate(service.id)}
+                          size="sm"
+                        />
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleOpenModal(service)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+                            title="Editar"
+                          >
+                            <PencilIcon className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(service)}
+                            className="p-1.5 rounded-lg text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            title="Eliminar"
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -328,6 +324,21 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
   // Cargar datos del servicio cuando se edita
   useEffect(() => {
     if (service && isOpen) {
+      // Reset form con los datos del servicio
+      reset({
+        name: service.name,
+        description: service.description || '',
+        duration: service.duration,
+        bufferTime: service.bufferTime || 0,
+        price: service.price,
+        color: service.color || '#3B82F6',
+        isActive: service.isActive,
+        isPublic: service.isPublic ?? true,
+        requiresConfirmation: service.requiresConfirmation || false,
+        maxAdvanceBooking: service.maxAdvanceBooking || 30,
+        minAdvanceBooking: service.minAdvanceBooking || 1,
+        categoryId: service.categoryId || '',
+      });
       // Cargar empleados asignados
       if (service.employees) {
         setSelectedEmployees(service.employees.map(e => e.id));
@@ -352,6 +363,20 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
       }
     } else if (!service && isOpen) {
       // Reset para nuevo servicio
+      reset({
+        name: '',
+        description: '',
+        duration: 30,
+        bufferTime: 0,
+        price: 0,
+        color: '#3B82F6',
+        isActive: true,
+        isPublic: true,
+        requiresConfirmation: false,
+        maxAdvanceBooking: 30,
+        minAdvanceBooking: 1,
+        categoryId: '',
+      });
       setSelectedEmployees([]);
       setSchedules(DAYS_OF_WEEK.map(day => ({
         dayOfWeek: day.value,
@@ -360,7 +385,7 @@ function ServiceModal({ isOpen, onClose, service, categories, onSuccess }: Servi
         endTime: '18:00',
       })));
     }
-  }, [service, isOpen]);
+  }, [service, isOpen, reset]);
 
   const toggleEmployee = (employeeId: string) => {
     setSelectedEmployees(prev =>
