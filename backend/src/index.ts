@@ -32,16 +32,75 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Tenant-Slug', 'X-Tenant-Subdomain'],
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: config.rateLimit.windowMs,
-  max: config.rateLimit.max,
+// Trust proxy for Cloudflare (to get real IP)
+app.set('trust proxy', 1);
+
+// Rate limiting - General (más permisivo)
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 300, // 300 requests por minuto
   message: {
     success: false,
     message: 'Demasiadas solicitudes, intenta de nuevo más tarde',
   },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // Usar la IP real detrás de Cloudflare
+  keyGenerator: (req) => {
+    return req.headers['cf-connecting-ip'] as string || 
+           req.headers['x-forwarded-for'] as string || 
+           req.ip || 
+           'unknown';
+  },
+  // Saltar rate limit para requests exitosos de usuarios autenticados
+  skip: (req) => {
+    // Si tiene token de autorización, ser más permisivo
+    return !!req.headers.authorization;
+  },
 });
-app.use('/api', limiter);
+
+// Rate limiting - Estricto para auth (prevenir fuerza bruta)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 10, // 10 intentos de login por 15 minutos
+  message: {
+    success: false,
+    message: 'Demasiados intentos de inicio de sesión. Espera 15 minutos.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.headers['cf-connecting-ip'] as string || 
+           req.headers['x-forwarded-for'] as string || 
+           req.ip || 
+           'unknown';
+  },
+});
+
+// Rate limiting - Para usuarios autenticados (muy permisivo)
+const authenticatedLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minuto
+  max: 500, // 500 requests por minuto para usuarios autenticados
+  message: {
+    success: false,
+    message: 'Demasiadas solicitudes, intenta de nuevo más tarde',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.headers['cf-connecting-ip'] as string || 
+           req.headers['x-forwarded-for'] as string || 
+           req.ip || 
+           'unknown';
+  },
+});
+
+// Aplicar limitadores
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/forgot-password', authLimiter);
+app.use('/api', authenticatedLimiter); // Para rutas autenticadas
+app.use('/api/public', generalLimiter); // Para rutas públicas
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
