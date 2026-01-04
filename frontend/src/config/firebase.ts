@@ -3,13 +3,18 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDTvI29IbiY7mKFEe89YthlOREtcReDjh4",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "citaspro-58dd6.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "citaspro-58dd6",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "citaspro-58dd6.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "685046800124",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:685046800124:web:9c7911fe8ed86255a28179"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
+
+// Validar que las variables de entorno estén configuradas
+if (!firebaseConfig.apiKey) {
+  console.warn('Firebase: VITE_FIREBASE_API_KEY no está configurada');
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
