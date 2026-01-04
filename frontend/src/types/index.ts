@@ -172,6 +172,49 @@ export interface CreateServiceData {
   schedules?: Omit<ServiceSchedule, 'id' | 'serviceId'>[];
 }
 
+// Extra types (productos/servicios adicionales)
+export interface Extra {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  isActive: boolean;
+  sortOrder: number;
+  tenantId: string;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    appointments: number;
+  };
+}
+
+export interface CreateExtraData {
+  name: string;
+  description?: string;
+  price: number;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+export interface UpdateExtraData {
+  name?: string;
+  description?: string;
+  price?: number;
+  isActive?: boolean;
+  sortOrder?: number;
+}
+
+// AppointmentExtra - relación cita-extra
+export interface AppointmentExtra {
+  id: string;
+  appointmentId: string;
+  extraId: string;
+  extra?: Extra;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
+
 // Appointment types
 export type AppointmentStatus = 
   | 'PENDING' 
@@ -204,6 +247,7 @@ export interface Appointment {
   tenantId: string;
   bookedById?: string;
   bookedBy?: User;
+  extras?: AppointmentExtra[];
   createdAt: string;
   updatedAt: string;
 }

@@ -12,6 +12,7 @@ import {
   BuildingStorefrontIcon,
   UserGroupIcon,
   SparklesIcon,
+  ShoppingBagIcon,
 } from '@heroicons/react/24/outline';
 
 interface SidebarProps {
@@ -25,6 +26,7 @@ const navigation = [
   { name: 'Citas', href: '/appointments', icon: ClipboardDocumentListIcon },
   { name: 'Clientes', href: '/clients', icon: UsersIcon },
   { name: 'Servicios', href: '/services', icon: BuildingStorefrontIcon },
+  { name: 'Extras', href: '/extras', icon: ShoppingBagIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
   { name: 'Usuarios', href: '/users', icon: UserGroupIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
   { name: 'Configuración', href: '/settings', icon: Cog6ToothIcon, roles: ['SUPER_ADMIN', 'ADMIN'] },
 ];

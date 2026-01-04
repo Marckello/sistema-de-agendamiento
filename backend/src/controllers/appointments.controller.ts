@@ -105,6 +105,17 @@ export const getAppointments = asyncHandler(async (req: Request, res: Response) 
             lastName: true,
           },
         },
+        extras: {
+          include: {
+            extra: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+              },
+            },
+          },
+        },
       },
       orderBy: sortBy ? { [sortBy]: sortOrder || 'asc' } : [{ date: 'asc' }, { startTime: 'asc' }],
       skip: (page - 1) * limit,
@@ -158,6 +169,17 @@ export const getAppointment = asyncHandler(async (req: Request, res: Response) =
           lastName: true,
         },
       },
+      extras: {
+        include: {
+          extra: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+            },
+          },
+        },
+      },
       notifications: {
         orderBy: { createdAt: 'desc' },
         take: 10,
@@ -198,6 +220,7 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
     clientNotes: data.clientNotes,
     source: data.source || 'internal',
     createdById: req.user!.id,
+    extras: data.extras,
   });
   
   res.status(201).json({

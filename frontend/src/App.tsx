@@ -27,6 +27,9 @@ import ClientDetailPage from '@/pages/clients/ClientDetailPage';
 // Services
 import ServicesPage from '@/pages/services/ServicesPage';
 
+// Extras
+import ExtrasPage from '@/pages/extras/ExtrasPage';
+
 // Users
 import UsersPage from '@/pages/users/UsersPage';
 
@@ -139,6 +142,7 @@ function App() {
         <Route path="/clients" element={<ClientsPage />} />
         <Route path="/clients/:id" element={<ClientDetailPage />} />
         <Route path="/services" element={<ServicesPage />} />
+        <Route path="/extras" element={<ExtrasPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/profile" element={<ProfilePage />} />

@@ -161,6 +161,7 @@ model Tenant {
   holidays      Holiday[]
   notifications NotificationTemplate[]
   webhookLogs   WebhookLog[]
+  extras        Extra[]
   
   @@map("tenants")
 }
@@ -547,6 +548,7 @@ model Appointment {
   
   // Relaciones
   notifications NotificationLog[]
+  extras        AppointmentExtra[]
   
   @@index([tenantId, date])
   @@index([tenantId, employeeId, date])
@@ -571,6 +573,53 @@ enum PaymentStatus {
   PAID       // Pagado
   REFUNDED   // Reembolsado
   FAILED     // Fallido
+}
+
+// =============================================
+// EXTRAS (Productos/Servicios adicionales)
+// =============================================
+
+// Extras que se pueden agregar a cualquier cita
+model Extra {
+  id       String @id @default(uuid())
+  tenantId String
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  
+  // Configuración
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relaciones
+  appointments AppointmentExtra[]
+  
+  @@unique([tenantId, name])
+  @@map("extras")
+}
+
+// Relación muchos a muchos entre citas y extras
+model AppointmentExtra {
+  id            String @id @default(uuid())
+  appointmentId String
+  appointment   Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  extraId       String
+  extra         Extra @relation(fields: [extraId], references: [id], onDelete: Cascade)
+  
+  // Datos al momento de la cita (para historial)
+  quantity  Int     @default(1)
+  unitPrice Decimal @db.Decimal(10, 2) // Precio al momento de agregar
+  total     Decimal @db.Decimal(10, 2) // quantity * unitPrice
+  
+  createdAt DateTime @default(now())
+  
+  @@unique([appointmentId, extraId])
+  @@map("appointment_extras")
 }
 
 // =============================================

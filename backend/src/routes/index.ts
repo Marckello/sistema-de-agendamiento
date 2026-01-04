@@ -12,6 +12,7 @@ import chatRoutes from './chat.routes.js';
 import whatsappRoutes from './whatsapp.routes.js';
 import adminRoutes from './admin.routes.js';
 import verificationRoutes from './verification.routes.js';
+import extrasRoutes from './extras.routes.js';
 import { extractTenant } from '../middleware/tenant.js';
 
 const router = Router();
@@ -35,6 +36,7 @@ router.use('/book', bookingRoutes);
 router.use('/appointments', appointmentsRoutes);
 router.use('/clients', clientsRoutes);
 router.use('/services', servicesRoutes);
+router.use('/extras', extrasRoutes);
 router.use('/users', usersRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/dashboard', dashboardRoutes);

@@ -15,7 +15,8 @@ import { appointmentService } from '@/services/appointments';
 import { clientService } from '@/services/clients';
 import { serviceService } from '@/services/services';
 import { userService } from '@/services/users';
-import { Client, Service, User, CreateAppointmentData, TimeSlot } from '@/types';
+import { extrasService } from '@/services/extras';
+import { Client, Service, User, CreateAppointmentData, TimeSlot, Extra } from '@/types';
 
 interface AppointmentModalProps {
   isOpen: boolean;
@@ -57,6 +58,7 @@ export default function AppointmentModal({
   const [selectedSlotWarning, setSelectedSlotWarning] = useState<TimeSlot | null>(null);
   const [showWarningConfirm, setShowWarningConfirm] = useState(false);
   const [warningAccepted, setWarningAccepted] = useState(false);
+  const [selectedExtras, setSelectedExtras] = useState<{ id: string; quantity: number }[]>([]);
 
   const {
     register,
@@ -80,6 +82,12 @@ export default function AppointmentModal({
   const { data: employeesData } = useQuery({
     queryKey: ['employees'],
     queryFn: () => userService.getEmployees(),
+  });
+
+  // Fetch extras activos
+  const { data: extrasData } = useQuery({
+    queryKey: ['extras-active'],
+    queryFn: () => extrasService.getActive(),
   });
 
   // Fetch available slots when service, employee, and date are selected
@@ -146,6 +154,7 @@ export default function AppointmentModal({
       startTime: selectedSlot,
       notes: data.notes,
       internalNotes: data.internalNotes,
+      extras: selectedExtras, // Array de { id, quantity }
     };
 
     if (isEditing) {
@@ -166,6 +175,26 @@ export default function AppointmentModal({
   const clients = extractArray(clientsData?.data, 'clients');
   const services = extractArray(servicesData?.data);
   const employees = extractArray(employeesData?.data, 'users');
+  const extras = extractArray(extrasData?.data);
+
+  // Helper para manejar selección de extras
+  const toggleExtra = (extraId: string) => {
+    setSelectedExtras(prev => {
+      const existing = prev.find(e => e.id === extraId);
+      if (existing) {
+        return prev.filter(e => e.id !== extraId);
+      }
+      return [...prev, { id: extraId, quantity: 1 }];
+    });
+  };
+
+  const isExtraSelected = (extraId: string) => selectedExtras.some(e => e.id === extraId);
+
+  // Calcular total de extras
+  const extrasTotal = selectedExtras.reduce((sum, selected) => {
+    const extra = extras.find((e: Extra) => e.id === selected.id);
+    return sum + (extra ? Number(extra.price) * selected.quantity : 0);
+  }, 0);
 
   return (
     <Transition appear show={isOpen} as={Fragment}>
@@ -499,6 +528,48 @@ export default function AppointmentModal({
                           </button>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Extras (productos/servicios adicionales) */}
+                  {extras.length > 0 && (
+                    <div>
+                      <label className="label">Extras (opcional)</label>
+                      <div className="space-y-2 max-h-32 overflow-y-auto p-2 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        {extras.map((extra: Extra) => (
+                          <label
+                            key={extra.id}
+                            className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
+                          >
+                            <div className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={isExtraSelected(extra.id)}
+                                onChange={() => toggleExtra(extra.id)}
+                                className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                              />
+                              <span className="text-sm text-gray-700 dark:text-gray-300">
+                                {extra.name}
+                              </span>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              +${Number(extra.price).toFixed(2)}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                      {selectedExtras.length > 0 && (
+                        <div className="mt-2 p-2 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-primary-700 dark:text-primary-300">
+                              Extras seleccionados: {selectedExtras.length}
+                            </span>
+                            <span className="font-medium text-primary-700 dark:text-primary-300">
+                              +${extrasTotal.toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

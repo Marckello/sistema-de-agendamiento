@@ -14,6 +14,7 @@ interface CreateAppointmentData {
   clientNotes?: string;
   source?: string;
   createdById?: string;
+  extras?: { id: string; quantity: number }[];
 }
 
 interface UpdateAppointmentData {
@@ -453,6 +454,39 @@ export async function createAppointment(data: CreateAppointmentData) {
       tenant: true,
     },
   });
+
+  // Agregar extras si se proporcionaron
+  if (data.extras && data.extras.length > 0) {
+    // Obtener precios de los extras
+    const extrasInfo = await prisma.extra.findMany({
+      where: {
+        id: { in: data.extras.map(e => e.id) },
+        tenantId: data.tenantId,
+        isActive: true,
+      },
+    });
+
+    // Crear registros de AppointmentExtra
+    const appointmentExtras = data.extras.map(extra => {
+      const extraInfo = extrasInfo.find(e => e.id === extra.id);
+      if (!extraInfo) return null;
+      
+      const unitPrice = Number(extraInfo.price);
+      return {
+        appointmentId: appointment.id,
+        extraId: extra.id,
+        quantity: extra.quantity,
+        unitPrice,
+        total: unitPrice * extra.quantity,
+      };
+    }).filter(Boolean) as any[];
+
+    if (appointmentExtras.length > 0) {
+      await prisma.appointmentExtra.createMany({
+        data: appointmentExtras,
+      });
+    }
+  }
   
   // Enviar notificación por email
   await sendAppointmentNotification(appointment.id, 'APPOINTMENT_CREATED', 'EMAIL');

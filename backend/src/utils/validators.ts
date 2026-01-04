@@ -166,6 +166,10 @@ export const createAppointmentSchema = z.object({
   notes: z.string().optional(),
   clientNotes: z.string().optional(),
   source: z.string().optional(),
+  extras: z.array(z.object({
+    id: z.string().uuid(),
+    quantity: z.number().int().min(1).default(1),
+  })).optional(),
 });
 
 export const updateAppointmentSchema = z.object({
