@@ -31,6 +31,7 @@ interface UpdateAppointmentData {
   discount?: number;
   discountType?: string;
   cancelReason?: string;
+  extras?: { id: string; quantity: number }[];
 }
 
 interface TimeSlot {
@@ -510,7 +511,7 @@ export async function createAppointment(data: CreateAppointmentData) {
 export async function updateAppointment(appointmentId: string, data: UpdateAppointmentData, userId?: string) {
   const currentAppointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
-    include: { service: true },
+    include: { service: true, extras: true },
   });
   
   if (!currentAppointment) {
@@ -518,7 +519,10 @@ export async function updateAppointment(appointmentId: string, data: UpdateAppoi
   }
   
   const previousStatus = currentAppointment.status;
-  let updateData: any = { ...data };
+  
+  // Separar extras del resto de los datos
+  const { extras, ...restData } = data;
+  let updateData: any = { ...restData };
   
   // Si cambia fecha, hora o empleado, verificar disponibilidad
   if (data.date || data.startTime || data.employeeId || data.serviceId) {
@@ -573,6 +577,36 @@ export async function updateAppointment(appointmentId: string, data: UpdateAppoi
     }
   }
   
+  // Manejar extras si se proporcionan
+  if (extras !== undefined) {
+    // Eliminar extras existentes
+    await prisma.appointmentExtra.deleteMany({
+      where: { appointmentId },
+    });
+    
+    // Agregar nuevos extras
+    if (extras && extras.length > 0) {
+      const extrasData = await prisma.extra.findMany({
+        where: { id: { in: extras.map(e => e.id) } },
+      });
+      
+      for (const extraInput of extras) {
+        const extraData = extrasData.find(e => e.id === extraInput.id);
+        if (extraData) {
+          await prisma.appointmentExtra.create({
+            data: {
+              appointmentId,
+              extraId: extraInput.id,
+              quantity: extraInput.quantity || 1,
+              unitPrice: extraData.price,
+              total: Number(extraData.price) * (extraInput.quantity || 1),
+            },
+          });
+        }
+      }
+    }
+  }
+  
   const appointment = await prisma.appointment.update({
     where: { id: appointmentId },
     data: updateData,
@@ -581,6 +615,11 @@ export async function updateAppointment(appointmentId: string, data: UpdateAppoi
       employee: true,
       service: true,
       tenant: true,
+      extras: {
+        include: {
+          extra: true,
+        },
+      },
     },
   });
   

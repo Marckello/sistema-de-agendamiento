@@ -188,6 +188,10 @@ export const updateAppointmentSchema = z.object({
   cancelReason: z.string().optional(),
   rating: z.number().min(1).max(5).optional(),
   review: z.string().optional(),
+  extras: z.array(z.object({
+    id: z.string().uuid(),
+    quantity: z.number().int().min(1).default(1),
+  })).optional(),
 });
 
 export const checkAvailabilitySchema = z.object({

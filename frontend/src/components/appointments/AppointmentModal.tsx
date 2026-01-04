@@ -540,7 +540,6 @@ export default function AppointmentModal({
                         {extras.map((extra: Extra) => (
                           <div
                             key={extra.id}
-                            onClick={() => toggleExtra(extra.id)}
                             className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer"
                           >
                             <div className="flex items-center gap-3">
@@ -549,7 +548,10 @@ export default function AppointmentModal({
                                 onChange={() => toggleExtra(extra.id)}
                                 size="sm"
                               />
-                              <span className="text-sm text-gray-700 dark:text-gray-300">
+                              <span 
+                                className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer"
+                                onClick={() => toggleExtra(extra.id)}
+                              >
                                 {extra.name}
                               </span>
                             </div>
